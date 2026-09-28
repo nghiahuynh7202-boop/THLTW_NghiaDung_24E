@@ -17,9 +17,6 @@ class Category extends Model
     // Bảng chỉ có cột created_at, tắt chế độ tự động cập nhật updated_at
     const UPDATED_AT = null;
 
-    /**
-     * Các cột được phép gán dữ liệu hàng loạt
-     */
     protected $fillable = [
         'parent_id',
         'name',
@@ -29,9 +26,6 @@ class Category extends Model
         'status',
     ];
 
-    /**
-     * Ép kiểu dữ liệu
-     */
     protected $casts = [
         'parent_id'   => 'integer',
         'is_featured' => 'boolean',
@@ -39,35 +33,33 @@ class Category extends Model
         'created_at'  => 'datetime',
     ];
 
-    /**
-     * Quan hệ: Danh mục cha
-     */
+    // Quan hệ: Danh mục cha
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');
     }
 
-    /**
-     * Quan hệ: Danh mục con
-     */
+    // Quan hệ: Danh mục con
     public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_id');
     }
 
-    /**
-     * Scope: Lọc danh mục đang hoạt động (status = 1)
-     */
+    // Scope: Lọc danh mục đang hoạt động (status = 1)
     public function scopeActive(Builder $query): void
     {
         $query->where('status', 1);
     }
 
-    /**
-     * Scope: Lọc danh mục nổi bật (is_featured = 1)
-     */
+    // Scope: Lọc danh mục nổi bật (is_featured = 1)
     public function scopeFeatured(Builder $query): void
     {
         $query->where('is_featured', 1);
+    }
+
+    // Scope: Lọc danh mục trong thùng rác (status = 0 - xóa tạm)
+    public function scopeTrash(Builder $query): void
+    {
+        $query->where('status', 0);
     }
 }
