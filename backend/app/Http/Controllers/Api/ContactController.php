@@ -19,10 +19,6 @@ class ContactController extends Controller
     {
         $query = Contact::with('user')->latest('id');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->query('status'));
-        }
-
         $perPage = (int) $request->input('per_page', 12);
         $contacts = $query->paginate($perPage);
 
@@ -30,19 +26,19 @@ class ContactController extends Controller
     }
 
     /**
-     * POST /api/contacts hoặc POST /api/admin/contacts — Gửi liên hệ mới
+     * POST /api/contacts hoặc POST /api/admin/contacts — Thêm liên hệ
      */
     public function store(ContactRequest $request): JsonResponse
     {
         $data = $request->validated();
-        if ($request->user()) {
-            $data['user_id'] = $data['user_id'] ?? $request->user()->id;
+        if ($request->user() && empty($data['user_id'])) {
+            $data['user_id'] = $request->user()->id;
         }
 
         $contact = Contact::create($data);
 
         return (new ContactResource($contact))
-            ->additional(['message' => 'Gửi liên hệ thành công. Chúng tôi sẽ phản hồi sớm nhất.'])
+            ->additional(['message' => 'Thêm liên hệ thành công.'])
             ->response()
             ->setStatusCode(201);
     }
@@ -54,15 +50,11 @@ class ContactController extends Controller
     {
         $contact = Contact::with('user')->findOrFail($id);
 
-        if ($contact->status === 'chua_xem') {
-            $contact->update(['status' => 'da_xem']);
-        }
-
         return new ContactResource($contact);
     }
 
     /**
-     * PUT|PATCH /api/admin/contacts/{contact} — Cập nhật / phản hồi liên hệ
+     * PUT|PATCH /api/admin/contacts/{contact} — Cập nhật liên hệ
      */
     public function update(ContactRequest $request, Contact $contact): JsonResponse
     {
@@ -81,7 +73,7 @@ class ContactController extends Controller
     }
 
     /**
-     * DELETE /api/admin/contacts/{contact} — Xóa tạm liên hệ
+     * DELETE /api/admin/contacts/{contact} — Xóa tạm liên hệ (vào thùng rác)
      */
     public function destroy(Contact $contact): JsonResponse
     {

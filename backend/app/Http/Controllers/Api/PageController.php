@@ -30,7 +30,7 @@ class PageController extends Controller
     }
 
     /**
-     * POST /api/admin/pages — Thêm trang đơn mới
+     * POST /api/admin/pages — Thêm trang đơn
      */
     public function store(PageRequest $request): JsonResponse
     {
@@ -46,7 +46,7 @@ class PageController extends Controller
     }
 
     /**
-     * GET /api/admin/pages/{id} hoặc GET /api/pages/{id} — Chi tiết trang (hỗ trợ ID hoặc slug)
+     * GET /api/admin/pages/{id} hoặc GET /api/pages/{id} — Chi tiết trang đơn
      */
     public function show($id): PageResource
     {
@@ -58,7 +58,7 @@ class PageController extends Controller
     }
 
     /**
-     * PUT|PATCH /api/admin/pages/{page} — Cập nhật trang
+     * PUT|PATCH /api/admin/pages/{page} — Cập nhật trang đơn
      */
     public function update(PageRequest $request, Page $page): JsonResponse
     {
@@ -76,7 +76,7 @@ class PageController extends Controller
     }
 
     /**
-     * DELETE /api/admin/pages/{page} — Xóa tạm trang
+     * DELETE /api/admin/pages/{page} — Xóa tạm trang đơn (vào thùng rác)
      */
     public function destroy(Page $page): JsonResponse
     {
@@ -84,12 +84,12 @@ class PageController extends Controller
         $page->delete();
 
         return response()->json([
-            'message' => 'Xóa tạm trang thành công (đã chuyển vào thùng rác).',
+            'message' => 'Xóa tạm trang đơn thành công (đã chuyển vào thùng rác).',
         ]);
     }
 
     /**
-     * GET /api/admin/pages/trash — Danh sách trang trong thùng rác
+     * GET /api/admin/pages/trash — Danh sách trang đơn trong thùng rác
      */
     public function trash(Request $request): AnonymousResourceCollection
     {
@@ -102,7 +102,7 @@ class PageController extends Controller
     }
 
     /**
-     * PATCH /api/admin/pages/{id}/restore — Khôi phục trang từ thùng rác
+     * PATCH /api/admin/pages/{id}/restore — Khôi phục trang đơn từ thùng rác
      */
     public function restore(int|string $id): JsonResponse
     {
@@ -115,7 +115,7 @@ class PageController extends Controller
     }
 
     /**
-     * DELETE /api/admin/pages/{id}/force — Xóa vĩnh viễn trang
+     * DELETE /api/admin/pages/{id}/force — Xóa vĩnh viễn trang đơn
      */
     public function forceDelete(int|string $id): JsonResponse
     {

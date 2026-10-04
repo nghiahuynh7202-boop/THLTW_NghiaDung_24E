@@ -17,7 +17,7 @@ class PostTopicController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = PostTopic::withCount('posts')->latest('id');
+        $query = PostTopic::latest('id');
 
         if (! $request->is('api/admin/*')) {
             $query->active();
@@ -46,17 +46,17 @@ class PostTopicController extends Controller
     }
 
     /**
-     * GET /api/admin/post-topics/{id} hoặc GET /api/post-topics/{id} — Chi tiết chủ đề
+     * GET /api/admin/post-topics/{id} hoặc GET /api/post-topics/{id} — Chi tiết chủ đề bài viết
      */
     public function show($id): PostTopicResource
     {
-        $topic = PostTopic::withCount('posts')->findOrFail($id);
+        $topic = PostTopic::findOrFail($id);
 
         return new PostTopicResource($topic);
     }
 
     /**
-     * PUT|PATCH /api/admin/post-topics/{post_topic} — Cập nhật chủ đề
+     * PUT|PATCH /api/admin/post-topics/{post_topic} — Cập nhật chủ đề bài viết
      */
     public function update(PostTopicRequest $request, PostTopic $postTopic): JsonResponse
     {
@@ -74,7 +74,7 @@ class PostTopicController extends Controller
     }
 
     /**
-     * DELETE /api/admin/post-topics/{post_topic} — Xóa tạm chủ đề
+     * DELETE /api/admin/post-topics/{post_topic} — Xóa tạm chủ đề bài viết (vào thùng rác)
      */
     public function destroy(PostTopic $postTopic): JsonResponse
     {
@@ -87,7 +87,7 @@ class PostTopicController extends Controller
     }
 
     /**
-     * GET /api/admin/post-topics/trash — Danh sách chủ đề trong thùng rác
+     * GET /api/admin/post-topics/trash — Danh sách chủ đề bài viết trong thùng rác
      */
     public function trash(Request $request): AnonymousResourceCollection
     {
@@ -100,7 +100,7 @@ class PostTopicController extends Controller
     }
 
     /**
-     * PATCH /api/admin/post-topics/{id}/restore — Khôi phục chủ đề từ thùng rác
+     * PATCH /api/admin/post-topics/{id}/restore — Khôi phục chủ đề bài viết từ thùng rác
      */
     public function restore(int|string $id): JsonResponse
     {
@@ -113,7 +113,7 @@ class PostTopicController extends Controller
     }
 
     /**
-     * DELETE /api/admin/post-topics/{id}/force — Xóa vĩnh viễn chủ đề
+     * DELETE /api/admin/post-topics/{id}/force — Xóa vĩnh viễn chủ đề bài viết
      */
     public function forceDelete(int|string $id): JsonResponse
     {

@@ -23,14 +23,6 @@ class SupplierController extends Controller
             $query->active();
         }
 
-        if ($request->filled('search')) {
-            $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('phone', 'LIKE', "%{$search}%");
-            });
-        }
-
         $perPage = (int) $request->input('per_page', 12);
         $suppliers = $query->paginate($perPage);
 
@@ -38,7 +30,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * POST /api/admin/suppliers — Thêm nhà cung cấp mới
+     * POST /api/admin/suppliers — Thêm nhà cung cấp
      */
     public function store(SupplierRequest $request): JsonResponse
     {
@@ -56,7 +48,7 @@ class SupplierController extends Controller
      */
     public function show($id): SupplierResource
     {
-        $supplier = Supplier::with('stockDocuments')->findOrFail($id);
+        $supplier = Supplier::findOrFail($id);
 
         return new SupplierResource($supplier);
     }
@@ -75,7 +67,7 @@ class SupplierController extends Controller
     }
 
     /**
-     * DELETE /api/admin/suppliers/{supplier} — Xóa tạm nhà cung cấp
+     * DELETE /api/admin/suppliers/{supplier} — Xóa tạm nhà cung cấp (vào thùng rác)
      */
     public function destroy(Supplier $supplier): JsonResponse
     {

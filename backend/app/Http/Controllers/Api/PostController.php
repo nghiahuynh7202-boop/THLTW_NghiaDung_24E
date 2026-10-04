@@ -24,18 +24,6 @@ class PostController extends Controller
             $query->active();
         }
 
-        if ($request->filled('topic_id')) {
-            $query->where('topic_id', $request->query('topic_id'));
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'LIKE', "%{$search}%")
-                  ->orWhere('summary', 'LIKE', "%{$search}%");
-            });
-        }
-
         $perPage = (int) $request->input('per_page', 12);
         $posts = $query->paginate($perPage);
 
@@ -43,16 +31,12 @@ class PostController extends Controller
     }
 
     /**
-     * POST /api/admin/posts — Thêm bài viết mới
+     * POST /api/admin/posts — Thêm bài viết
      */
     public function store(PostRequest $request): JsonResponse
     {
         $data = $request->validated();
         $data['slug'] = $data['slug'] ?? Post::uniqueSlug($data['title']);
-
-        if ($request->user() && empty($data['user_id'])) {
-            $data['user_id'] = $request->user()->id;
-        }
 
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('posts', 'public');
@@ -67,7 +51,7 @@ class PostController extends Controller
     }
 
     /**
-     * GET /api/admin/posts/{id} hoặc GET /api/posts/{id} — Chi tiết bài viết (hỗ trợ ID hoặc slug)
+     * GET /api/admin/posts/{id} hoặc GET /api/posts/{id} — Chi tiết bài viết
      */
     public function show($id): PostResource
     {
@@ -107,7 +91,7 @@ class PostController extends Controller
     }
 
     /**
-     * DELETE /api/admin/posts/{post} — Xóa tạm bài viết
+     * DELETE /api/admin/posts/{post} — Xóa tạm bài viết (vào thùng rác)
      */
     public function destroy(Post $post): JsonResponse
     {

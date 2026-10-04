@@ -22,23 +22,6 @@ class StockDocumentController extends Controller
     {
         $query = StockDocument::with(['supplier', 'creator', 'items.product'])->latest('id');
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->query('type'));
-        }
-
-        if ($request->filled('supplier_id')) {
-            $query->where('supplier_id', $request->query('supplier_id'));
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'LIKE', "%{$search}%")
-                  ->orWhere('reason', 'LIKE', "%{$search}%")
-                  ->orWhere('note', 'LIKE', "%{$search}%");
-            });
-        }
-
         $perPage = (int) $request->input('per_page', 12);
         $documents = $query->paginate($perPage);
 
@@ -46,7 +29,7 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * POST /api/admin/stock-documents — Tạo phiếu xuất/nhập kho (hỗ trợ kèm danh sách sản phẩm)
+     * POST /api/admin/stock-documents — Thêm phiếu xuất/nhập kho
      */
     public function store(StockDocumentRequest $request): JsonResponse
     {
@@ -68,7 +51,6 @@ class StockDocumentController extends Controller
                     $itemData['unit_cost'] = $itemData['unit_cost'] ?? 0;
                     StockDocumentItem::create($itemData);
 
-                    // Cập nhật số lượng tồn kho của sản phẩm
                     $product = Product::find($itemData['product_id']);
                     if ($product) {
                         if ($doc->type === 'in') {
@@ -84,26 +66,23 @@ class StockDocumentController extends Controller
         });
 
         return (new StockDocumentResource($document->load(['supplier', 'creator', 'items.product'])))
-            ->additional(['message' => 'Tạo phiếu kho thành công.'])
+            ->additional(['message' => 'Thêm phiếu kho thành công.'])
             ->response()
             ->setStatusCode(201);
     }
 
     /**
-     * GET /api/admin/stock-documents/{id} — Chi tiết phiếu kho
+     * GET /api/admin/stock-documents/{id} — Chi tiết phiếu xuất/nhập kho
      */
     public function show($id): StockDocumentResource
     {
-        $document = StockDocument::with(['supplier', 'creator', 'items.product'])
-            ->where('id', $id)
-            ->orWhere('code', $id)
-            ->firstOrFail();
+        $document = StockDocument::with(['supplier', 'creator', 'items.product'])->findOrFail($id);
 
         return new StockDocumentResource($document);
     }
 
     /**
-     * PUT|PATCH /api/admin/stock-documents/{stock_document} — Cập nhật thông tin phiếu kho
+     * PUT|PATCH /api/admin/stock-documents/{stock_document} — Cập nhật phiếu xuất/nhập kho
      */
     public function update(StockDocumentRequest $request, StockDocument $stockDocument): JsonResponse
     {
@@ -118,7 +97,7 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * DELETE /api/admin/stock-documents/{stock_document} — Xóa tạm phiếu kho
+     * DELETE /api/admin/stock-documents/{stock_document} — Xóa tạm phiếu xuất/nhập kho (vào thùng rác)
      */
     public function destroy(StockDocument $stockDocument): JsonResponse
     {
@@ -130,7 +109,7 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * GET /api/admin/stock-documents/trash — Danh sách phiếu kho trong thùng rác
+     * GET /api/admin/stock-documents/trash — Danh sách phiếu xuất/nhập kho trong thùng rác
      */
     public function trash(Request $request): AnonymousResourceCollection
     {
@@ -144,7 +123,7 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * PATCH /api/admin/stock-documents/{id}/restore — Khôi phục phiếu kho từ thùng rác
+     * PATCH /api/admin/stock-documents/{id}/restore — Khôi phục phiếu xuất/nhập kho từ thùng rác
      */
     public function restore(int|string $id): JsonResponse
     {
@@ -157,7 +136,7 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * DELETE /api/admin/stock-documents/{id}/force — Xóa vĩnh viễn phiếu kho
+     * DELETE /api/admin/stock-documents/{id}/force — Xóa vĩnh viễn phiếu xuất/nhập kho
      */
     public function forceDelete(int|string $id): JsonResponse
     {

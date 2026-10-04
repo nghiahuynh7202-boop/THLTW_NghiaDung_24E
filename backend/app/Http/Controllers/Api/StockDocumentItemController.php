@@ -16,19 +16,11 @@ use Illuminate\Support\Facades\DB;
 class StockDocumentItemController extends Controller
 {
     /**
-     * GET /api/admin/stock-document-items — Danh sách chi tiết dòng nhập xuất
+     * GET /api/admin/stock-document-items — Danh sách chi tiết phiếu kho
      */
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = StockDocumentItem::with(['product', 'document'])->latest('id');
-
-        if ($request->filled('document_id')) {
-            $query->where('document_id', $request->query('document_id'));
-        }
-
-        if ($request->filled('product_id')) {
-            $query->where('product_id', $request->query('product_id'));
-        }
 
         $perPage = (int) $request->input('per_page', 20);
         $items = $query->paginate($perPage);
@@ -37,7 +29,7 @@ class StockDocumentItemController extends Controller
     }
 
     /**
-     * POST /api/admin/stock-document-items — Thêm mặt hàng vào phiếu kho
+     * POST /api/admin/stock-document-items — Thêm chi tiết phiếu kho
      */
     public function store(StockDocumentItemRequest $request): JsonResponse
     {
@@ -63,7 +55,7 @@ class StockDocumentItemController extends Controller
         });
 
         return (new StockDocumentItemResource($item->load('product')))
-            ->additional(['message' => 'Thêm sản phẩm vào phiếu kho thành công.'])
+            ->additional(['message' => 'Thêm chi tiết phiếu kho thành công.'])
             ->response()
             ->setStatusCode(201);
     }
@@ -79,7 +71,7 @@ class StockDocumentItemController extends Controller
     }
 
     /**
-     * PUT|PATCH /api/admin/stock-document-items/{item} — Cập nhật dòng phiếu kho
+     * PUT|PATCH /api/admin/stock-document-items/{item} — Cập nhật chi tiết phiếu kho
      */
     public function update(StockDocumentItemRequest $request, StockDocumentItem $stockDocumentItem): JsonResponse
     {
@@ -106,12 +98,12 @@ class StockDocumentItemController extends Controller
         });
 
         return (new StockDocumentItemResource($stockDocumentItem->load('product')))
-            ->additional(['message' => 'Cập nhật mặt hàng trong phiếu kho thành công.'])
+            ->additional(['message' => 'Cập nhật chi tiết phiếu kho thành công.'])
             ->response();
     }
 
     /**
-     * DELETE /api/admin/stock-document-items/{item} — Xóa dòng sản phẩm khỏi phiếu kho
+     * DELETE /api/admin/stock-document-items/{item} — Xóa chi tiết phiếu kho
      */
     public function destroy(StockDocumentItem $stockDocumentItem): JsonResponse
     {
@@ -131,7 +123,7 @@ class StockDocumentItemController extends Controller
         });
 
         return response()->json([
-            'message' => 'Xóa sản phẩm khỏi phiếu kho thành công.',
+            'message' => 'Xóa chi tiết phiếu kho thành công.',
         ]);
     }
 }

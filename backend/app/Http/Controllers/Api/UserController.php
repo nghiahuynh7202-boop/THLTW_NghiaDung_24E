@@ -20,17 +20,8 @@ class UserController extends Controller
     {
         $query = User::latest('id');
 
-        if ($request->filled('role')) {
-            $query->where('role', $request->query('role'));
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->query('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('email', 'LIKE', "%{$search}%")
-                  ->orWhere('phone', 'LIKE', "%{$search}%");
-            });
+        if (! $request->is('api/admin/*')) {
+            $query->active();
         }
 
         $perPage = (int) $request->input('per_page', 12);
@@ -40,7 +31,7 @@ class UserController extends Controller
     }
 
     /**
-     * POST /api/admin/users — Thêm người dùng mới
+     * POST /api/admin/users — Thêm người dùng
      */
     public function store(UserRequest $request): JsonResponse
     {
@@ -56,7 +47,7 @@ class UserController extends Controller
     }
 
     /**
-     * GET /api/admin/users/{id} — Chi tiết người dùng
+     * GET /api/admin/users/{id} hoặc GET /api/users/{id} — Chi tiết người dùng
      */
     public function show($id): UserResource
     {
@@ -86,7 +77,7 @@ class UserController extends Controller
     }
 
     /**
-     * DELETE /api/admin/users/{user} — Xóa tạm người dùng
+     * DELETE /api/admin/users/{user} — Xóa tạm người dùng (vào thùng rác)
      */
     public function destroy(User $user): JsonResponse
     {
