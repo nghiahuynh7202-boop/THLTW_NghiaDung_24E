@@ -1,69 +1,167 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useState } from "react";
+import Link from "next/link";
+import Banner from "../components/Banner";
+import ProductCard, { ProductItem } from "../components/ProductCard";
+import { ChevronRight, CheckCircle2 } from "lucide-react";
+
+export default function HomePage() {
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Danh sách sản phẩm mẫu theo chính xác ảnh chụp
+  const defaultProducts: ProductItem[] = [
+    {
+      id: 1,
+      name: "Thương",
+      slug: "thuong",
+      price: 350000,
+      image: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=500&auto=format&fit=crop&q=80",
+      isNew: true,
+      isFreeShip: false,
+    },
+    {
+      id: 2,
+      name: "Victo rose",
+      slug: "victo-rose",
+      price: 300000,
+      image: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=500&auto=format&fit=crop&q=80",
+      isNew: false,
+      isFreeShip: false,
+    },
+    {
+      id: 3,
+      name: "My sun",
+      slug: "my-sun",
+      price: 150000,
+      image: "https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=500&auto=format&fit=crop&q=80",
+      isNew: false,
+      isFreeShip: false,
+    },
+    {
+      id: 4,
+      name: "Yêu",
+      slug: "yeu",
+      price: 350000,
+      image: "https://images.unsplash.com/photo-1582794543139-8ac9cb0f7b11?w=500&auto=format&fit=crop&q=80",
+      isNew: false,
+      isFreeShip: false,
+    },
+    {
+      id: 5,
+      name: "Mini flower vase 06",
+      slug: "mini-flower-vase-06",
+      price: 350000,
+      image: "https://images.unsplash.com/photo-1533616688419-b7a585564566?w=500&auto=format&fit=crop&q=80",
+      isNew: true,
+      isFreeShip: false,
+    },
+    {
+      id: 6,
+      name: "Ngọt",
+      slug: "ngot",
+      price: 350000,
+      image: "https://images.unsplash.com/photo-1563241527-3004b7be0ffd?w=500&auto=format&fit=crop&q=80",
+      isNew: true,
+      isFreeShip: false,
+    },
+    {
+      id: 7,
+      name: "An nhiên 2",
+      slug: "an-nhien-2",
+      price: 650000,
+      image: "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?w=500&auto=format&fit=crop&q=80",
+      isNew: true,
+      isFreeShip: true,
+    },
+    {
+      id: 8,
+      name: "Xinh",
+      slug: "xinh",
+      price: 300000,
+      image: "https://images.unsplash.com/photo-1589244159943-460088ed5c92?w=500&auto=format&fit=crop&q=80",
+      isNew: true,
+      isFreeShip: false,
+    },
+    {
+      id: 9,
+      name: "Pastel love",
+      slug: "pastel-love",
+      price: 400000,
+      image: "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=500&auto=format&fit=crop&q=80",
+      isNew: false,
+      isFreeShip: true,
+    },
+    {
+      id: 10,
+      name: "Thơ",
+      slug: "tho",
+      price: 350000,
+      image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500&auto=format&fit=crop&q=80",
+      isNew: true,
+      isFreeShip: false,
+    },
+  ];
+
+  const [products] = useState<ProductItem[]>(defaultProducts);
+
+  const handleAddToCart = (product: ProductItem) => {
+    setToastMessage(`Đã thêm "${product.name}" vào giỏ hàng!`);
+    setTimeout(() => {
+      setToastMessage(null);
+    }, 3000);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="bg-white min-h-screen py-4 sm:py-6 font-sans">
+      {/* TOAST NOTIFICATION */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-2.5 text-sm animate-bounce">
+          <CheckCircle2 className="w-5 h-5 text-green-400" />
+          <span>{toastMessage}</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      )}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-8">
+        
+        {/* 1. KHỐI BANNER "ĐỒNG HÀNH CÙNG NÔNG DÂN" & "TƯ VẤN CHỌN HOA TƯƠI" */}
+        <Banner />
+
+        {/* 2. TIÊU ĐỀ BỘ SƯU TẬP THEO MẪU */}
+        <div className="mb-3 pt-2">
+          <h2 className="text-[#9e1c24] text-base sm:text-lg font-bold uppercase tracking-wide">
+            MẪU HOA MỚI NĂM 2026
+          </h2>
         </div>
-      </main>
+
+        {/* 3. KHỐI SẢN PHẨM KHUNG XANH DƯƠNG NHẠT (ĐÚNG THEO MẪU ẢNH) */}
+        <div className="bg-[#eaf4fc] p-3 sm:p-5 rounded-sm border border-[#d2e7fa] shadow-xs">
+          
+          {/* LƯỚI 5 CỘT SẢN PHẨM */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2.5 sm:gap-3.5">
+            {products.map((item) => (
+              <ProductCard
+                key={item.id}
+                product={item}
+                onAddToCart={handleAddToCart}
+              />
+            ))}
+          </div>
+
+          {/* NÚT XEM THÊM SẢN PHẨM */}
+          <div className="mt-6 flex justify-center">
+            <Link
+              href="/products"
+              className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-white hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-medium rounded-xs border border-gray-300 shadow-xs hover:text-[#d32f2f] hover:border-[#d32f2f] transition-all group"
+            >
+              <span>Xem thêm hơn 714 sản phẩm</span>
+              <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 text-gray-400 group-hover:text-[#d32f2f]" />
+            </Link>
+          </div>
+
+        </div>
+
+      </div>
     </div>
   );
 }

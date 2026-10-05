@@ -5,81 +5,106 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Storage;
 
 class CategoryController extends Controller
 {
-    // 1. LẤY DANH SÁCH DANH MỤC ĐANG HOẠT ĐỘNG (GET: /api/categories)
-    public function index()
+    /**
+     * GET /api/categories hoặc GET /api/admin/categories — Danh sách danh mục
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $categories = Category::active()
-            ->whereNull('parent_id')
-            ->with(['children' => fn ($q) => $q->active()])
-            ->orderBy('id', 'asc')
-            ->get();
+        $query = Category::with('children')->latest('id');
+
+        if (! $request->is('api/admin/*')) {
+            $query->active()->whereNull('parent_id');
+        }
+
+        $perPage = (int) $request->input('per_page', 12);
+        $categories = $query->paginate($perPage);
 
         return CategoryResource::collection($categories);
     }
 
-    // 2. THÊM MỚI DANH MỤC (POST: /api/categories)
-    public function store(Request $request)
+    /**
+     * POST /api/admin/categories — Thêm danh mục
+     */
+    public function store(Request $request): JsonResponse
     {
-        $category = Category::create($request->all());
+        $data = $request->validate([
+            'parent_id'   => 'nullable|integer|exists:categories,id',
+            'name'        => 'required|string|max:150',
+            'slug'        => 'nullable|string|max:150|unique:categories,slug',
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_featured' => 'nullable|boolean',
+            'status'      => 'nullable|integer|in:0,1',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('categories', 'public');
+        }
+
+        $category = Category::create($data);
+
+        return (new CategoryResource($category))
+            ->additional(['message' => 'Thêm danh mục thành công.'])
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    /**
+     * GET /api/admin/categories/{category} hoặc GET /api/categories/{category} — Chi tiết danh mục
+     */
+    public function show($id): CategoryResource
+    {
+        $category = Category::with(['parent', 'children'])->findOrFail($id);
 
         return new CategoryResource($category);
     }
 
-    // 3. XEM CHI TIẾT 1 DANH MỤC (GET: /api/categories/{id})
-    public function show($id)
+    /**
+     * PUT|PATCH /api/admin/categories/{category} — Cập nhật danh mục
+     */
+    public function update(Request $request, Category $category): JsonResponse
     {
-        $category = Category::with('children')->findOrFail($id);
+        $data = $request->validate([
+            'parent_id'   => 'nullable|integer|exists:categories,id',
+            'name'        => 'sometimes|required|string|max:150',
+            'slug'        => 'nullable|string|max:150|unique:categories,slug,' . $category->id,
+            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'is_featured' => 'nullable|boolean',
+            'status'      => 'nullable|integer|in:0,1',
+        ]);
 
-        return new CategoryResource($category);
+        if ($request->hasFile('image')) {
+            if ($category->image) {
+                Storage::disk('public')->delete($category->image);
+            }
+            $data['image'] = $request->file('image')->store('categories', 'public');
+        } else {
+            unset($data['image']);
+        }
+
+        $category->update($data);
+
+        return (new CategoryResource($category))
+            ->additional(['message' => 'Cập nhật danh mục thành công.'])
+            ->response();
     }
 
-    // 4. SỬA DANH MỤC (PUT/PATCH: /api/categories/{id})
-    public function update(Request $request, $id)
+    /**
+     * DELETE /api/admin/categories/{category} — Xóa tạm danh mục (vào thùng rác)
+     */
+    public function destroy(Category $category): JsonResponse
     {
-        $category = Category::findOrFail($id);
-        $category->update($request->all());
+        $category->update(['status' => 0]);
+        $category->delete();
 
-        return new CategoryResource($category);
-    }
-
-    // 5. XÓA TẠM (VÀO THÙNG RÁC - STATUS = 0) (DELETE: /api/categories/{id})
-    public function destroy($id)
-    {
-        $category = Category::findOrFail($id);
-        $category->status = 0; // Đổi status = 0 (xóa tạm)
-        $category->save();
-
-        return response()->json(['message' => 'Đã chuyển danh mục vào thùng rác (xóa tạm thành công)!']);
-    }
-
-    // 6. XEM DANH SÁCH THÙNG RÁC (GET: /api/categories/trash)
-    public function trash()
-    {
-        $categories = Category::trash()->get(); // Lấy các danh mục có status = 0
-
-        return CategoryResource::collection($categories);
-    }
-
-    // 7. KHÔI PHỤC TỪ THÙNG RÁC (POST: /api/categories/{id}/restore)
-    public function restore($id)
-    {
-        $category = Category::findOrFail($id);
-        $category->status = 1; // Khôi phục hoạt động (status = 1)
-        $category->save();
-
-        return new CategoryResource($category);
-    }
-
-    // 8. XÓA VĨNH VIỄN KHỎI CSDL (DELETE: /api/categories/{id}/force-delete)
-    public function forceDelete($id)
-    {
-        $category = Category::findOrFail($id);
-        $category->delete(); // Xóa hoàn toàn bản ghi khỏi database
-
-        return response()->json(['message' => 'Đã xóa vĩnh viễn danh mục thành công!']);
+        return response()->json([
+            'message' => 'Xóa tạm danh mục thành công (đã chuyển vào thùng rác).',
+        ]);
     }
 }
