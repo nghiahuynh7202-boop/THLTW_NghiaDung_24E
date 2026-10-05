@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BrandController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\MenuController;
@@ -17,7 +18,7 @@ use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
 // =========================================================================
-// 1. AUTHENTICATION APIs (Đăng ký, Đăng nhập, Quản lý Token & Profile)
+// 1. AUTHENTICATION & USER APIs (Đăng ký, Đăng nhập, Profile, Giỏ hàng)
 // =========================================================================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -29,6 +30,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+
+    // Giỏ hàng (Shopping Cart)
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart', [CartController::class, 'store']);
+    Route::put('/cart/{id}', [CartController::class, 'update']);
+    Route::delete('/cart/clear', [CartController::class, 'clear']);
+    Route::delete('/cart/{id}', [CartController::class, 'destroy']);
 });
 
 // =========================================================================
