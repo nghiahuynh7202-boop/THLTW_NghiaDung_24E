@@ -8,50 +8,53 @@ import {
   ShoppingBag,
   Package,
   Users,
-  TrendingUp,
-  Plus,
   Eye,
   Edit,
   Trash2,
   CheckCircle,
   Clock,
   Truck,
-  Heart,
-  Sparkles,
+  ArrowRight,
+  Home,
+  ChevronRight,
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
 
-  // Thống kê kinh doanh shop hoa
+  // Thống kê kinh doanh theo dạng Small Box AdminLTE
   const stats = [
     {
-      title: "Tổng Doanh Thu Tháng",
-      value: "48.550.000 đ",
-      change: "+14.2%",
-      icon: DollarSign,
-      color: "bg-pink-50 text-pink-600 border-pink-200",
-    },
-    {
-      title: "Đơn Đặt Hoa Mới",
-      value: "128 Đơn",
-      change: "+8.5%",
+      title: "Đơn hàng mới",
+      value: "128",
+      desc: "Đơn đặt hoa trong tháng",
       icon: ShoppingBag,
-      color: "bg-rose-50 text-rose-600 border-rose-200",
+      bg: "bg-[#00c0ef]",
+      link: "/admin/orders",
     },
     {
-      title: "Mẫu Hoa Đang Bán",
-      value: "714 Mẫu",
-      change: "Còn hàng",
+      title: "Tổng doanh thu",
+      value: "48.55M",
+      desc: "Doanh thu tháng hiện tại",
+      icon: DollarSign,
+      bg: "bg-[#00a65a]",
+      link: "/admin/orders",
+    },
+    {
+      title: "Mẫu hoa đang bán",
+      value: "714",
+      desc: "Sản phẩm hoạt động",
       icon: Package,
-      color: "bg-amber-50 text-amber-600 border-amber-200",
+      bg: "bg-[#f39c12]",
+      link: "/admin/products",
     },
     {
-      title: "Khách Hàng Thân Thiết",
-      value: "1.420 Người",
-      change: "+22%",
+      title: "Khách hàng",
+      value: "1,420",
+      desc: "Thành viên đã đăng ký",
       icon: Users,
-      color: "bg-purple-50 text-purple-600 border-purple-200",
+      bg: "bg-[#dd4b39]",
+      link: "/admin/users",
     },
   ];
 
@@ -151,35 +154,35 @@ export default function AdminDashboardPage() {
     switch (status) {
       case "cho_xac_nhan":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-bold bg-amber-100 text-amber-800">
             <Clock className="w-3 h-3" />
             Chờ xác nhận
           </span>
         );
       case "da_xac_nhan":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-600 border border-blue-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-bold bg-blue-100 text-blue-800">
             <CheckCircle className="w-3 h-3" />
             Đã xác nhận
           </span>
         );
       case "dang_giao":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-600 border border-purple-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-bold bg-purple-100 text-purple-800">
             <Truck className="w-3 h-3" />
             Đang giao
           </span>
         );
       case "hoan_tat":
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-bold bg-emerald-100 text-emerald-800">
             <CheckCircle className="w-3 h-3" />
             Hoàn tất
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-gray-50 text-gray-600 border border-gray-200">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-xs text-[11px] font-bold bg-gray-100 text-gray-800">
             {status}
           </span>
         );
@@ -187,147 +190,132 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 1. HEADER CHÀO MỪNG TRẮNG HỒNG */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 sm:p-6 rounded-2xl border border-pink-100 shadow-xs">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-pink-50 text-pink-600 text-xs font-bold uppercase tracking-wider mb-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-pink-500" />
-            <span>Quản Lý Cửa Hàng Hoa</span>
-          </div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">
-            Xin chào Quản Trị Viên! 🌸
-          </h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Xem báo cáo kinh doanh, đơn đặt hoa và quản lý danh mục sản phẩm hôm nay.
-          </p>
-        </div>
+    <div className="space-y-4">
+      {/* 1. HEADER & BREADCRUMB */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-300 gap-2">
+        <h1 className="text-xl font-bold text-gray-800 tracking-tight">
+          Bảng điều khiển
+        </h1>
 
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/admin/products"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-xs font-bold shadow-sm shadow-pink-500/25 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Mẫu Hoa Mới</span>
+        <div className="flex items-center text-xs text-gray-500 gap-1.5">
+          <Link href="/admin" className="flex items-center gap-1 text-[#3c8dbc]">
+            <Home className="w-3.5 h-3.5" />
+            <span>Trang chủ</span>
           </Link>
+          <ChevronRight className="w-3 h-3 text-gray-400" />
+          <span className="text-gray-700 font-semibold">Bảng điều khiển</span>
         </div>
       </div>
 
-      {/* 2. CÁC THẺ CHỈ SỐ STATS TONE TRẮNG HỒNG */}
+      {/* 2. STAT SMALL BOXES THEO PHONG CÁCH ADMINLTE */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((item, idx) => {
           const Icon = item.icon;
           return (
             <div
               key={idx}
-              className="bg-white p-5 rounded-2xl border border-pink-100/80 shadow-xs hover:border-pink-300 transition-all flex flex-col justify-between"
+              className={`${item.bg} text-white rounded-xs shadow-2xs overflow-hidden flex flex-col justify-between relative`}
             >
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-gray-500">{item.title}</span>
-                <div className={`w-9 h-9 rounded-xl border flex items-center justify-center ${item.color}`}>
-                  <Icon className="w-4 h-4" />
+              <div className="p-4 flex items-start justify-between">
+                <div>
+                  <h3 className="text-3xl font-extrabold tracking-tight">{item.value}</h3>
+                  <p className="text-xs font-semibold uppercase mt-1 text-white/90">{item.title}</p>
                 </div>
+                <Icon className="w-12 h-12 text-black/15 absolute right-3 top-3 pointer-events-none" />
               </div>
-              <div>
-                <h3 className="text-2xl font-black text-gray-900 tracking-tight">{item.value}</h3>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <span className="text-xs font-bold text-pink-600 flex items-center">
-                    <TrendingUp className="w-3.5 h-3.5 mr-0.5 inline" />
-                    {item.change}
-                  </span>
-                  <span className="text-[11px] text-gray-400">tháng này</span>
-                </div>
-              </div>
+              <Link
+                href={item.link}
+                className="bg-black/15 hover:bg-black/25 text-white/90 hover:text-white py-1.5 px-4 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <span>Xem chi tiết</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           );
         })}
       </div>
 
-      {/* 3. BẢNG DỮ LIỆU CHÍNH */}
-      <div className="bg-white rounded-2xl border border-pink-100 shadow-xs overflow-hidden">
-        <div className="border-b border-pink-100 px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 bg-pink-50/30">
+      {/* 3. BẢNG DỮ LIỆU BOX ADMINLTE */}
+      <div className="bg-white border border-gray-300 border-t-3 border-t-[#3c8dbc] shadow-2xs">
+        <div className="p-3 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 bg-gray-50">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setActiveTab("orders")}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-xs transition-colors ${
                 activeTab === "orders"
-                  ? "bg-pink-500 text-white shadow-xs"
-                  : "text-gray-600 hover:bg-pink-50 hover:text-pink-600"
+                  ? "bg-[#3c8dbc] text-white"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
               }`}
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span>Đơn Đặt Hoa Gần Đây</span>
+              Đơn hàng gần đây
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("products")}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-xs transition-colors ${
                 activeTab === "products"
-                  ? "bg-pink-500 text-white shadow-xs"
-                  : "text-gray-600 hover:bg-pink-50 hover:text-pink-600"
+                  ? "bg-[#3c8dbc] text-white"
+                  : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-100"
               }`}
             >
-              <Package className="w-3.5 h-3.5" />
-              <span>Sản Phẩm Hoa Nổi Bật</span>
+              Sản phẩm nổi bật
             </button>
           </div>
 
-          <span className="text-xs text-pink-400 font-medium flex items-center gap-1">
-            <Heart className="w-3.5 h-3.5 fill-pink-400" />
-            <span>Dữ liệu bán hàng trực tiếp</span>
+          <span className="text-xs text-gray-500 font-medium">
+            Dữ liệu trực tiếp từ hệ thống
           </span>
         </div>
 
         {/* TAB 1: BẢNG ĐƠN HÀNG */}
         {activeTab === "orders" && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-gray-700">
-              <thead className="bg-pink-50/50 border-b border-pink-100 text-pink-700 font-bold uppercase text-[10px] tracking-wider">
+            <table className="w-full text-left text-xs text-gray-700 border-collapse">
+              <thead className="bg-[#3c8dbc] text-white font-bold uppercase text-[11px] tracking-wider">
                 <tr>
-                  <th className="px-5 py-3.5">Mã Đơn</th>
-                  <th className="px-5 py-3.5">Khách Hàng</th>
-                  <th className="px-5 py-3.5">Mẫu Hoa Đặt</th>
-                  <th className="px-5 py-3.5">Tổng Tiền</th>
-                  <th className="px-5 py-3.5">Thanh Toán</th>
-                  <th className="px-5 py-3.5">Trạng Thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Mã đơn</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Khách hàng</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Sản phẩm đặt</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Tổng tiền</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Thanh toán</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Trạng thái</th>
+                  <th className="px-4 py-2.5 text-center">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-pink-50 font-medium">
+              <tbody className="divide-y divide-gray-200">
                 {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-pink-50/40 transition-colors">
-                    <td className="px-5 py-3.5 font-bold text-gray-900">{order.id}</td>
-                    <td className="px-5 py-3.5">
-                      <div className="font-bold text-gray-900">{order.customer}</div>
-                      <div className="text-[11px] text-gray-400">{order.phone}</div>
+                  <tr key={order.id} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-4 py-2.5 font-bold text-gray-900 border-r border-gray-200">{order.id}</td>
+                    <td className="px-4 py-2.5 border-r border-gray-200">
+                      <div className="font-semibold text-gray-900">{order.customer}</div>
+                      <div className="text-[11px] text-gray-500">{order.phone}</div>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-600">{order.productSummary}</td>
-                    <td className="px-5 py-3.5 font-extrabold text-rose-600">
+                    <td className="px-4 py-2.5 border-r border-gray-200">{order.productSummary}</td>
+                    <td className="px-4 py-2.5 font-bold text-red-600 border-r border-gray-200">
                       {formatPrice(order.total)}
                     </td>
-                    <td className="px-5 py-3.5">
-                      <span className="px-2.5 py-0.5 rounded-full bg-pink-50 text-pink-700 text-[10px] font-bold border border-pink-100">
+                    <td className="px-4 py-2.5 border-r border-gray-200">
+                      <span className="px-2 py-0.5 rounded-xs text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200">
                         {order.paymentMethod}
                       </span>
                     </td>
-                    <td className="px-5 py-3.5">{getStatusBadge(order.status)}</td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="inline-flex items-center gap-1.5">
+                    <td className="px-4 py-2.5 border-r border-gray-200">{getStatusBadge(order.status)}</td>
+                    <td className="px-4 py-2.5 text-center">
+                      <div className="inline-flex items-center gap-1">
                         <button
                           type="button"
-                          className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors"
+                          className="p-1 bg-[#00c0ef] text-white hover:bg-[#00acd6] rounded-xs"
                           title="Xem chi tiết"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
-                          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Chỉnh sửa"
+                          className="p-1 bg-[#f39c12] text-white hover:bg-[#e08e0b] rounded-xs"
+                          title="Sửa"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -341,54 +329,55 @@ export default function AdminDashboardPage() {
         {/* TAB 2: BẢNG SẢN PHẨM */}
         {activeTab === "products" && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-gray-700">
-              <thead className="bg-pink-50/50 border-b border-pink-100 text-pink-700 font-bold uppercase text-[10px] tracking-wider">
+            <table className="w-full text-left text-xs text-gray-700 border-collapse">
+              <thead className="bg-[#3c8dbc] text-white font-bold uppercase text-[11px] tracking-wider">
                 <tr>
-                  <th className="px-5 py-3.5">Hình Ảnh</th>
-                  <th className="px-5 py-3.5">Tên Mẫu Hoa</th>
-                  <th className="px-5 py-3.5">Danh Mục</th>
-                  <th className="px-5 py-3.5">Giá Bán</th>
-                  <th className="px-5 py-3.5">Tồn Kho</th>
-                  <th className="px-5 py-3.5">Trạng Thái</th>
-                  <th className="px-5 py-3.5 text-right">Thao Tác</th>
+                  <th className="px-4 py-2.5 w-16 text-center border-r border-[#367fa9]">Hình ảnh</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Tên sản phẩm</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Danh mục</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Giá bán</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Tồn kho</th>
+                  <th className="px-4 py-2.5 border-r border-[#367fa9]">Trạng thái</th>
+                  <th className="px-4 py-2.5 text-center">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-pink-50 font-medium">
+              <tbody className="divide-y divide-gray-200">
                 {sampleProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-pink-50/40 transition-colors">
-                    <td className="px-5 py-3.5">
+                  <tr key={p.id} className="hover:bg-blue-50/40 transition-colors">
+                    <td className="px-4 py-2 text-center border-r border-gray-200">
                       <Image
                         src={p.image}
                         alt={p.name}
-                        width={40}
-                        height={40}
-                        className="w-10 h-10 object-cover rounded-xl border border-pink-100"
+                        width={36}
+                        height={36}
+                        unoptimized
+                        className="w-9 h-9 object-cover rounded-xs border border-gray-200 mx-auto"
                       />
                     </td>
-                    <td className="px-5 py-3.5 font-bold text-gray-900">{p.name}</td>
-                    <td className="px-5 py-3.5 text-gray-600">{p.category}</td>
-                    <td className="px-5 py-3.5 font-extrabold text-rose-600">{formatPrice(p.price)}</td>
-                    <td className="px-5 py-3.5 font-semibold text-gray-700">{p.stock} bó</td>
-                    <td className="px-5 py-3.5">
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-50 text-pink-700 border border-pink-200">
+                    <td className="px-4 py-2 font-bold text-gray-900 border-r border-gray-200">{p.name}</td>
+                    <td className="px-4 py-2 border-r border-gray-200">{p.category}</td>
+                    <td className="px-4 py-2 font-bold text-red-600 border-r border-gray-200">{formatPrice(p.price)}</td>
+                    <td className="px-4 py-2 border-r border-gray-200">{p.stock} bó</td>
+                    <td className="px-4 py-2 border-r border-gray-200">
+                      <span className="px-2 py-0.5 rounded-xs text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
                         Đang bán
                       </span>
                     </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <div className="inline-flex items-center gap-1.5">
+                    <td className="px-4 py-2 text-center">
+                      <div className="inline-flex items-center gap-1">
                         <button
                           type="button"
-                          className="p-1.5 text-gray-400 hover:text-pink-600 hover:bg-pink-50 rounded-lg transition-colors"
-                          title="Sửa mẫu hoa"
+                          className="p-1 bg-[#f39c12] text-white hover:bg-[#e08e0b] rounded-xs"
+                          title="Sửa"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
-                          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          className="p-1 bg-[#dd4b39] text-white hover:bg-[#d73925] rounded-xs"
                           title="Xóa tạm"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>

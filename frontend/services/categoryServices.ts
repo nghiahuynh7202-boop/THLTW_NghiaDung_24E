@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
+import axiosAdmin from "@/lib/axiosAdmin";
 
 export interface CategoryItem {
   id: number;
@@ -13,104 +13,139 @@ export interface CategoryItem {
   children?: CategoryItem[];
 }
 
-// Lấy danh sách danh mục (cho Admin)
+export interface CategoryApiResponse<T = unknown> {
+  data?: T;
+  meta?: {
+    total?: number;
+    last_page?: number;
+    current_page?: number;
+    per_page?: number;
+  };
+  pagination?: {
+    total?: number;
+    pageCount?: number;
+    currentPage?: number;
+  };
+  message?: string;
+}
+
+// 1. Lấy danh sách danh mục (cho Admin)
 export const getCategories = async (params: { page?: number; per_page?: number; search?: string } = {}) => {
-  const query = new URLSearchParams();
-  if (params.page) query.append("page", params.page.toString());
-  if (params.per_page) query.append("per_page", params.per_page.toString());
-  if (params.search) query.append("search", params.search);
+  try {
+    const res = (await axiosAdmin.get("/admin/categories", {
+      params,
+    })) as CategoryApiResponse<CategoryItem[]>;
 
-  const res = await fetch(`${API_URL}/admin/categories?${query.toString()}`, {
-    method: "GET",
-    headers: {
-      "Accept": "application/json",
-    },
-    cache: "no-store",
-  });
+    return {
+      data: res?.data ?? res,
+      meta: res?.meta,
+    };
+  } catch {
+    // Fallback sang /categories nếu route admin chưa cấu hình quyền
+    try {
+      const fallbackRes = (await axiosAdmin.get("/categories", {
+        params,
+      })) as CategoryApiResponse<CategoryItem[]>;
 
-  if (!res.ok) {
-    // Nếu API admin yêu cầu token hoặc chưa mở, fallback sang /categories
-    const fallbackRes = await fetch(`${API_URL}/categories?${query.toString()}`, {
-      headers: { "Accept": "application/json" },
-      cache: "no-store",
-    });
-    if (!fallbackRes.ok) {
-      throw new Error("Không thể tải danh sách danh mục");
+      return {
+        data: fallbackRes?.data ?? fallbackRes,
+        meta: fallbackRes?.meta,
+      };
+    } catch (fallbackError) {
+      console.error("Không thể tải danh sách danh mục:", fallbackError);
+      return {
+        data: [],
+        meta: { total: 0, last_page: 1, current_page: 1 },
+      };
     }
-    const data = await fallbackRes.json();
-    return { data };
   }
-
-  const data = await res.json();
-  return { data };
 };
 
-// Lấy chi tiết 1 danh mục
+// 2. Lấy chi tiết 1 danh mục
 export const getCategory = async (id: number | string) => {
-  const res = await fetch(`${API_URL}/admin/categories/${id}`, {
-    headers: { "Accept": "application/json" },
-    cache: "no-store",
-  });
-  if (!res.ok) throw new Error("Không tìm thấy danh mục");
-  const data = await res.json();
-  return { data: data.data || data };
+  const res = (await axiosAdmin.get(`/admin/categories/${id}`)) as { data?: CategoryItem } | CategoryItem;
+  const item = (res && typeof res === "object" && "data" in res && res.data ? res.data : res) as CategoryItem;
+  return {
+    data: item,
+  };
 };
 
-// Thêm mới danh mục
-export const createCategory = async (formData: FormData | object) => {
-  const isFormData = formData instanceof FormData;
-  const res = await fetch(`${API_URL}/admin/categories`, {
-    method: "POST",
-    headers: isFormData
-      ? { "Accept": "application/json" }
-      : { "Content-Type": "application/json", "Accept": "application/json" },
-    body: isFormData ? formData : JSON.stringify(formData),
-  });
-
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Thêm danh mục thất bại");
-  }
-  return { data: data.data || data };
+// 3. Thêm mới danh mục
+export const createCategory = async (formData: FormData | Record<string, unknown>) => {
+  const res = (await axiosAdmin.post("/admin/categories", formData)) as CategoryApiResponse<CategoryItem>;
+  return {
+    data: res?.data ?? res,
+    message: res?.message,
+  };
 };
 
-// Cập nhật danh mục
-export const updateCategory = async (id: number | string, formData: FormData | object) => {
+// 4. Cập nhật danh mục
+export const updateCategory = async (id: number | string, formData: FormData | Record<string, unknown>) => {
   const isFormData = formData instanceof FormData;
-  const url = `${API_URL}/admin/categories/${id}`;
+  const url = `/admin/categories/${id}`;
 
   // Laravel yêu cầu _method: PUT khi gửi FormData chứa file
   if (isFormData && !formData.has("_method")) {
     formData.append("_method", "PUT");
   }
 
-  const res = await fetch(url, {
-    method: "POST", // POST kèm _method: PUT cho FormData
-    headers: isFormData
-      ? { "Accept": "application/json" }
-      : { "Content-Type": "application/json", "Accept": "application/json" },
-    body: isFormData ? formData : JSON.stringify({ ...formData, _method: "PUT" }),
-  });
+  const payload = isFormData
+    ? formData
+    : { ...formData, _method: "PUT" };
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Cập nhật danh mục thất bại");
-  }
-  return { data: data.data || data };
+  const res = (await axiosAdmin.post(url, payload)) as CategoryApiResponse<CategoryItem>;
+  return {
+    data: res?.data ?? res,
+    message: res?.message,
+  };
 };
 
-// Xóa danh mục
+// 5. Xóa danh mục (chuyển vào thùng rác)
 export const deleteCategory = async (id: number | string) => {
-  const res = await fetch(`${API_URL}/admin/categories/${id}`, {
-    method: "DELETE",
-    headers: {
-      "Accept": "application/json",
-    },
-  });
+  const res = (await axiosAdmin.delete(`/admin/categories/${id}`)) as CategoryApiResponse;
+  return {
+    data: res?.data ?? res,
+    message: res?.message,
+  };
+};
 
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Xóa danh mục thất bại");
-  }
-  return { data };
+// 6. Lấy danh mục trong thùng rác
+export const getTrashCategories = async (page: number = 1, pageSize: number = 10) => {
+  const res = (await axiosAdmin.get("/admin/categories/trash", {
+    params: {
+      page,
+      per_page: pageSize,
+      pageSize,
+    },
+  })) as CategoryApiResponse<CategoryItem[]>;
+
+  const list = res?.data ?? (Array.isArray(res) ? res : []);
+  const meta = res?.meta;
+
+  return {
+    data: Array.isArray(list) ? list : [],
+    pagination: {
+      total: meta?.total ?? (Array.isArray(list) ? list.length : 0),
+      pageCount: meta?.last_page ?? 1,
+      currentPage: meta?.current_page ?? page,
+    },
+  };
+};
+
+// 7. Khôi phục danh mục từ thùng rác
+export const restoreCategory = async (id: number | string) => {
+  const res = (await axiosAdmin.patch(`/admin/categories/${id}/restore`)) as CategoryApiResponse<CategoryItem>;
+  return {
+    data: res?.data ?? res,
+    message: res?.message,
+  };
+};
+
+// 8. Xóa vĩnh viễn danh mục
+export const forceDeleteCategory = async (id: number | string) => {
+  const res = (await axiosAdmin.delete(`/admin/categories/${id}/force`)) as CategoryApiResponse;
+  return {
+    data: res?.data ?? res,
+    message: res?.message,
+  };
 };

@@ -101,10 +101,51 @@ class CategoryController extends Controller
     public function destroy(Category $category): JsonResponse
     {
         $category->update(['status' => 0]);
-        $category->delete();
 
         return response()->json([
             'message' => 'Xóa tạm danh mục thành công (đã chuyển vào thùng rác).',
+        ]);
+    }
+
+    /**
+     * GET /api/admin/categories/trash — Danh sách danh mục trong thùng rác
+     */
+    public function trash(Request $request): AnonymousResourceCollection
+    {
+        $perPage = (int) $request->input('per_page', $request->input('pageSize', 10));
+        $categories = Category::where('status', 0)->latest('id')->paginate($perPage);
+
+        return CategoryResource::collection($categories);
+    }
+
+    /**
+     * PATCH /api/admin/categories/{id}/restore — Khôi phục danh mục từ thùng rác
+     */
+    public function restore(int|string $id): JsonResponse
+    {
+        $category = Category::findOrFail($id);
+        $category->update(['status' => 1]);
+
+        return (new CategoryResource($category))
+            ->additional(['message' => 'Khôi phục danh mục thành công.'])
+            ->response();
+    }
+
+    /**
+     * DELETE /api/admin/categories/{id}/force — Xóa vĩnh viễn danh mục
+     */
+    public function forceDelete(int|string $id): JsonResponse
+    {
+        $category = Category::findOrFail($id);
+
+        if ($category->image) {
+            Storage::disk('public')->delete($category->image);
+        }
+
+        $category->delete();
+
+        return response()->json([
+            'message' => 'Xóa vĩnh viễn danh mục thành công.',
         ]);
     }
 }

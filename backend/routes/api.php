@@ -97,6 +97,9 @@ Route::prefix('admin')->group(function () {
     Route::apiResource('brands', BrandController::class);
 
     // 3. Danh mục (Categories)
+    Route::get('categories/trash', [CategoryController::class, 'trash']);
+    Route::patch('categories/{id}/restore', [CategoryController::class, 'restore']);
+    Route::delete('categories/{id}/force', [CategoryController::class, 'forceDelete']);
     Route::apiResource('categories', CategoryController::class);
 
     // 4. Banners
