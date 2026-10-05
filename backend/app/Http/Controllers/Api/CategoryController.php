@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
 use Illuminate\Http\JsonResponse;
@@ -33,18 +34,9 @@ class CategoryController extends Controller
     /**
      * POST /api/admin/categories — Thêm danh mục
      */
-    public function store(Request $request): JsonResponse
+    public function store(CategoryRequest $request): JsonResponse
     {
-        $table = (new Category)->getTable();
-
-        $data = $request->validate([
-            'parent_id'   => 'nullable|integer',
-            'name'        => 'required|string|max:150',
-            'slug'        => "nullable|string|max:150|unique:{$table},slug",
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_featured' => 'nullable',
-            'status'      => 'nullable|integer|in:0,1',
-        ]);
+        $data = $request->validated();
 
         if (empty($data['slug']) && !empty($data['name'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -84,18 +76,9 @@ class CategoryController extends Controller
     /**
      * PUT|PATCH /api/admin/categories/{category} — Cập nhật danh mục
      */
-    public function update(Request $request, Category $category): JsonResponse
+    public function update(CategoryRequest $request, Category $category): JsonResponse
     {
-        $table = $category->getTable();
-
-        $data = $request->validate([
-            'parent_id'   => 'nullable|integer',
-            'name'        => 'sometimes|required|string|max:150',
-            'slug'        => "nullable|string|max:150|unique:{$table},slug,{$category->id}",
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_featured' => 'nullable',
-            'status'      => 'nullable|integer|in:0,1',
-        ]);
+        $data = $request->validated();
 
         if (isset($data['parent_id']) && (int)$data['parent_id'] === 0) {
             $data['parent_id'] = null;

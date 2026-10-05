@@ -7,7 +7,7 @@ import { getCategories, deleteCategory, CategoryItem } from "@/services/category
 function CategoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const refresh = searchParams.get("refresh");
+  const refresh = searchParams.get("refresh");  
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);

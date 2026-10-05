@@ -92,6 +92,7 @@ export default function CreateCategoryPage() {
                 ? Object.values(errors)[0]?.[0]
                 : err?.response?.data?.message || err?.message || "Có lỗi xảy ra";
             setError(String(msg));
+            alert("❌ " + msg);
         } finally {
             setLoading(false);
         }

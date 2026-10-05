@@ -31,7 +31,7 @@ function UpdateCategoryContent() {
         is_featured: false,
     });
 
-    // Lấy danh sách danh mục gốc để chọn làm danh mục cha
+
     useEffect(() => {
         const fetchParents = async () => {
             try {
@@ -131,6 +131,7 @@ function UpdateCategoryContent() {
                 ? Object.values(errors)[0]?.[0]
                 : err?.response?.data?.message || err?.message || "Lỗi server";
             setError(String(msg));
+            alert("❌ " + msg);
         } finally {
             setLoading(false);
         }
