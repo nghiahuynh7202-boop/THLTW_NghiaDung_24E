@@ -7,13 +7,33 @@ const axiosClient = axios.create({
   timeout: API_CONFIG.TIMEOUT,
 });
 
-axiosClient.interceptors.request.use((config) => {
-  // ✅ Kiểm tra typeof window trước khi dùng localStorage
-  if (typeof window !== "undefined") {
-    // Đảm bảo baseURL đồng bộ hostname
-    config.baseURL = `http://${window.location.hostname}:8000/api`;
+// Helper tự động lọc bỏ các đoạn cảnh báo HTML của PHP (nếu có) trước chuỗi JSON
+function cleanJsonResponse<T = unknown>(data: unknown): T {
+  if (typeof data === "string") {
+    const trimmed = data.trim();
+    const jsonStartIndex = trimmed.indexOf("{");
+    const jsonArrayStartIndex = trimmed.indexOf("[");
+    const firstJsonIndex =
+      jsonStartIndex !== -1 && jsonArrayStartIndex !== -1
+        ? Math.min(jsonStartIndex, jsonArrayStartIndex)
+        : Math.max(jsonStartIndex, jsonArrayStartIndex);
 
-    // ✅ Use correct key from AuthContext
+    if (firstJsonIndex !== -1) {
+      try {
+        const jsonPart = trimmed.substring(firstJsonIndex);
+        return JSON.parse(jsonPart) as T;
+      } catch {
+        // Giữ nguyên nếu không parse được
+      }
+    }
+  }
+  return data as T;
+}
+
+axiosClient.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    config.baseURL = `http://${window.location.hostname || "127.0.0.1"}:8000/api`;
+
     const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -23,9 +43,11 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
-// ✅ Response interceptor unwrap data đơn giản
+// Response interceptor: unwrap và tự động lọc HTML lỗi PHP
 axiosClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    return cleanJsonResponse(response.data);
+  },
   (error) => Promise.reject(error)
 );
 

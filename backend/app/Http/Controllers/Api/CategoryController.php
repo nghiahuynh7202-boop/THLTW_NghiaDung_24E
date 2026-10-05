@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
@@ -23,7 +24,7 @@ class CategoryController extends Controller
             $query->active()->whereNull('parent_id');
         }
 
-        $perPage = (int) $request->input('per_page', 12);
+        $perPage = (int) $request->input('per_page', 50);
         $categories = $query->paginate($perPage);
 
         return CategoryResource::collection($categories);
@@ -34,17 +35,32 @@ class CategoryController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $table = (new Category)->getTable();
+
         $data = $request->validate([
-            'parent_id'   => 'nullable|integer|exists:categories,id',
+            'parent_id'   => 'nullable|integer',
             'name'        => 'required|string|max:150',
-            'slug'        => 'nullable|string|max:150|unique:categories,slug',
+            'slug'        => "nullable|string|max:150|unique:{$table},slug",
             'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_featured' => 'nullable|boolean',
+            'is_featured' => 'nullable',
             'status'      => 'nullable|integer|in:0,1',
         ]);
 
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
+
+        if (isset($data['parent_id']) && (int)$data['parent_id'] === 0) {
+            $data['parent_id'] = null;
+        }
+
+        $data['is_featured'] = !empty($data['is_featured']) && filter_var($data['is_featured'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+        $data['status'] = isset($data['status']) ? (int)$data['status'] : 1;
+
         if ($request->hasFile('image')) {
             $data['image'] = $request->file('image')->store('categories', 'public');
+        } else {
+            $data['image'] = null;
         }
 
         $category = Category::create($data);
@@ -70,14 +86,24 @@ class CategoryController extends Controller
      */
     public function update(Request $request, Category $category): JsonResponse
     {
+        $table = $category->getTable();
+
         $data = $request->validate([
-            'parent_id'   => 'nullable|integer|exists:categories,id',
+            'parent_id'   => 'nullable|integer',
             'name'        => 'sometimes|required|string|max:150',
-            'slug'        => 'nullable|string|max:150|unique:categories,slug,' . $category->id,
+            'slug'        => "nullable|string|max:150|unique:{$table},slug,{$category->id}",
             'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_featured' => 'nullable|boolean',
+            'is_featured' => 'nullable',
             'status'      => 'nullable|integer|in:0,1',
         ]);
+
+        if (isset($data['parent_id']) && (int)$data['parent_id'] === 0) {
+            $data['parent_id'] = null;
+        }
+
+        if (isset($data['is_featured'])) {
+            $data['is_featured'] = filter_var($data['is_featured'], FILTER_VALIDATE_BOOLEAN);
+        }
 
         if ($request->hasFile('image')) {
             if ($category->image) {

@@ -2,329 +2,299 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
-import {
-  getTrashCategories,
-  restoreCategory,
-  forceDeleteCategory,
-  CategoryItem,
-} from "@/services/categoryServices";
-import {
-  ArrowLeft,
-  RotateCw,
-  Trash2,
-  Undo2,
-  Home,
-  ChevronRight,
-  Layers,
-} from "lucide-react";
+import axiosAdmin from "@/lib/axiosAdmin";
+import { CategoryItem } from "@/services/categoryServices";
+
+// Route endpoints backend
+const ADMIN = "/admin/categories";
+const TRASH_URL = `${ADMIN}/trash`;
+const restoreUrl = (id: number | string) => `${ADMIN}/${id}/restore`;
+const forceUrl = (id: number | string) => `${ADMIN}/${id}/force`;
+
+const PAGE_SIZE = 10;
 
 export default function TrashCategoryPage() {
-  const router = useRouter();
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({ total: 0, pageCount: 1 });
-  const pageSize = 10;
+    const router = useRouter();
+    const [categories, setCategories] = useState<CategoryItem[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pagination, setPagination] = useState({ total: 0, pageCount: 1 });
 
-  const fetchTrashed = useCallback(async (page = 1) => {
-    setIsLoading(true);
-    try {
-      const res = await getTrashCategories(page, pageSize);
-      const list = res?.data ?? [];
-      const pg = res?.pagination ?? { total: 0, pageCount: 1 };
-      setCategories(Array.isArray(list) ? list : []);
-      setPagination(pg);
-    } catch (err) {
-      console.error("Lỗi lấy thùng rác danh mục:", err);
-      setCategories([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [pageSize]);
+    const fetchTrashed = useCallback(async (page = 1) => {
+        setIsLoading(true);
+        try {
+            const res = (await axiosAdmin.get(TRASH_URL, {
+                params: { page, per_page: PAGE_SIZE },
+            })) as any;
 
-  useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      setIsLoading(true);
-      try {
-        const res = await getTrashCategories(currentPage, pageSize);
-        if (isMounted) {
-          const list = res?.data ?? [];
-          const pg = res?.pagination ?? { total: 0, pageCount: 1 };
-          setCategories(Array.isArray(list) ? list : []);
-          setPagination(pg);
+            // axiosAdmin đã bóc response.data, nên res chính là body của Laravel
+            const list = Array.isArray(res) ? res : res?.data ?? [];
+            const meta = res?.meta ?? res?.pagination ?? {};
+
+            setCategories(Array.isArray(list) ? list : []);
+            setPagination({
+                total: meta.total ?? list.length,
+                pageCount: meta.last_page ?? meta.pageCount ?? 1,
+            });
+        } catch (err) {
+            console.error("Lỗi lấy thùng rác danh mục:", err);
+            setCategories([]);
+            setPagination({ total: 0, pageCount: 1 });
+        } finally {
+            setIsLoading(false);
         }
-      } catch (err) {
-        console.error("Lỗi lấy thùng rác danh mục:", err);
-        if (isMounted) setCategories([]);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
+    }, []);
+
+    useEffect(() => {
+        void fetchTrashed(currentPage);
+    }, [currentPage, fetchTrashed]);
+
+    // Sau khi khôi phục/xóa: nếu trang hiện tại hết dữ liệu thì lùi về trang trước
+    const reloadAfterChange = () => {
+        if (categories.length === 1 && currentPage > 1) {
+            setCurrentPage((p) => p - 1);
+        } else {
+            void fetchTrashed(currentPage);
+        }
     };
 
-    void loadData();
-
-    return () => {
-      isMounted = false;
+    const handleRestore = async (id: number | string) => {
+        if (!window.confirm("Khôi phục danh mục này?")) return;
+        try {
+            await axiosAdmin.patch(restoreUrl(id));
+            alert("✅ Khôi phục thành công!");
+            reloadAfterChange();
+        } catch (err: any) {
+            alert("❌ " + (err?.response?.data?.message || "Khôi phục thất bại"));
+        }
     };
-  }, [currentPage, pageSize]);
 
-  const handleRestore = async (id: number) => {
-    if (!window.confirm("Khôi phục danh mục này về danh sách hoạt động?")) return;
-    try {
-      await restoreCategory(id);
-      alert("✅ Khôi phục thành công!");
-      void fetchTrashed(currentPage);
-    } catch (err: unknown) {
-      const errorObj = err as { message?: string };
-      alert("❌ " + (errorObj?.message || "Khôi phục thất bại"));
-    }
-  };
+    const handleForceDelete = async (id: number | string) => {
+        if (!window.confirm("⚠️ Xóa vĩnh viễn? Không thể hoàn tác!")) return;
+        try {
+            await axiosAdmin.delete(forceUrl(id));
+            alert("✅ Đã xóa vĩnh viễn!");
+            reloadAfterChange();
+        } catch (err: any) {
+            alert("❌ " + (err?.response?.data?.message || "Xóa thất bại"));
+        }
+    };
 
-  const handleForceDelete = async (id: number) => {
-    if (!window.confirm("⚠️ Xóa vĩnh viễn? Dữ liệu và hình ảnh sẽ bị xóa hoàn toàn!")) return;
-    try {
-      await forceDeleteCategory(id);
-      alert("✅ Đã xóa vĩnh viễn!");
-      void fetchTrashed(currentPage);
-    } catch (err: unknown) {
-      const errorObj = err as { message?: string };
-      alert("❌ " + (errorObj?.message || "Xóa thất bại"));
-    }
-  };
+    // Chỉ xóa các mục đang hiển thị ở trang hiện tại
+    const handleDeleteAll = async () => {
+        if (!window.confirm(`⚠️ Xóa vĩnh viễn ${categories.length} danh mục trên trang này? Không thể hoàn tác!`)) return;
 
-  const handleDeleteAll = async () => {
-    if (!window.confirm("⚠️ Xóa TẤT CẢ danh mục trong thùng rác vĩnh viễn?")) return;
-    try {
-      await Promise.all(categories.map((c) => forceDeleteCategory(c.id)));
-      alert("✅ Đã dọn sạch thùng rác!");
-      setCurrentPage(1);
-      void fetchTrashed(1);
-    } catch {
-      alert("❌ Có lỗi xảy ra khi xóa");
-    }
-  };
+        const results = await Promise.allSettled(
+            categories.map((c) => axiosAdmin.delete(forceUrl(c.id)))
+        );
+        const failed = results.filter((r) => r.status === "rejected").length;
 
-  const totalPages = pagination.pageCount ?? 1;
+        alert(failed === 0 ? "✅ Đã xóa tất cả!" : `⚠️ Có ${failed} danh mục xóa thất bại`);
+        setCurrentPage(1);
+        void fetchTrashed(1);
+    };
 
-  return (
-    <div className="space-y-4">
-      {/* Header Breadcrumb */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-300 gap-2">
-        <h1 className="text-xl font-bold text-gray-800 tracking-tight">
-          Thùng rác danh mục
-        </h1>
+    const totalPages = pagination.pageCount ?? 1;
 
-        <div className="flex items-center text-xs text-gray-500 gap-1.5">
-          <Link href="/admin" className="flex items-center gap-1 hover:text-[#3c8dbc]">
-            <Home className="w-3.5 h-3.5 text-gray-600" />
-            <span>Trang chủ</span>
-          </Link>
-          <ChevronRight className="w-3 h-3 text-gray-400" />
-          <Link href="/admin/category" className="hover:text-[#3c8dbc]">
-            Danh mục
-          </Link>
-          <ChevronRight className="w-3 h-3 text-gray-400" />
-          <span className="text-red-600 font-semibold">Thùng rác</span>
-        </div>
-      </div>
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 px-4 py-8">
+            <div className="max-w-7xl mx-auto">
+                {/* Breadcrumb */}
+                <div className="mb-4 flex items-center gap-2 text-sm text-gray-500">
+                    <button
+                        onClick={() => router.push("/admin/category")}
+                        className="hover:text-blue-600 transition font-medium cursor-pointer"
+                    >
+                        🗂 Danh mục
+                    </button>
+                    <span>/</span>
+                    <span className="text-red-500 font-semibold">🗑 Thùng rác</span>
+                </div>
 
-      {/* Action bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 border border-gray-200 shadow-2xs">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void fetchTrashed(currentPage)}
-            disabled={isLoading}
-            className="p-1.5 border border-gray-300 bg-white hover:bg-gray-100 text-gray-700 rounded-xs transition-colors"
-            title="Làm mới"
-          >
-            <RotateCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
-          </button>
-          <span className="text-xs text-gray-600">
-            Tổng cộng: <strong>{pagination.total ?? 0}</strong> mục đã xóa tạm
-          </span>
-        </div>
+                {/* Title */}
+                <div className="mb-6">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-1">🗑️ Thùng rác danh mục</h1>
+                    <p className="text-gray-500 text-sm">
+                        Danh mục đã xóa mềm — khôi phục hoặc xóa vĩnh viễn
+                    </p>
+                </div>
 
-        <div className="flex items-center gap-2">
-          {categories.length > 0 && (
-            <button
-              type="button"
-              onClick={handleDeleteAll}
-              className="inline-flex items-center gap-1 bg-[#dd4b39] hover:bg-[#d73925] text-white px-3 py-1.5 rounded-xs text-xs font-bold shadow-2xs transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Dọn sạch thùng rác</span>
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => router.push("/admin/category")}
-            className="inline-flex items-center gap-1 bg-[#3c8dbc] hover:bg-[#367fa9] text-white px-3 py-1.5 rounded-xs text-xs font-semibold shadow-2xs transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Quay lại danh mục</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="bg-white border border-gray-300 shadow-2xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-[#3c8dbc] text-white font-bold uppercase text-[11px] tracking-wider select-none">
-              <tr>
-                <th className="py-2.5 px-3 w-14 text-center border-r border-[#367fa9]">STT</th>
-                <th className="py-2.5 px-3 w-20 text-center border-r border-[#367fa9]">HÌNH ẢNH</th>
-                <th className="py-2.5 px-4 border-r border-[#367fa9]">DANH MỤC</th>
-                <th className="py-2.5 px-3 border-r border-[#367fa9]">SLUG</th>
-                <th className="py-2.5 px-3 border-r border-[#367fa9]">DANH MỤC CHA</th>
-                <th className="py-2.5 px-3 text-center border-r border-[#367fa9]">TRẠNG THÁI</th>
-                <th className="py-2.5 px-4 w-44 text-center">TÁC VỤ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 text-gray-700 font-medium">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-16 text-gray-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-6 h-6 border-2 border-gray-300 border-t-[#3c8dbc] rounded-full animate-spin" />
-                      <span className="text-xs">Đang tải thùng rác...</span>
+                <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-red-500 to-orange-500 px-8 py-6">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                            <div>
+                                <h2 className="text-2xl font-bold text-white">Danh sách đã xóa</h2>
+                                <p className="text-red-100 mt-0.5 text-sm">
+                                    Tổng: <strong>{pagination.total ?? 0}</strong> danh mục
+                                </p>
+                            </div>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    onClick={() => fetchTrashed(currentPage)}
+                                    disabled={isLoading}
+                                    className="bg-white/20 hover:bg-white/30 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-bold transition text-sm cursor-pointer"
+                                >
+                                    {isLoading ? "⟳ Đang tải..." : "⟳ Làm mới"}
+                                </button>
+                                {categories.length > 0 && (
+                                    <button
+                                        onClick={handleDeleteAll}
+                                        className="bg-gray-900 hover:bg-black text-white px-5 py-2.5 rounded-xl font-bold transition text-sm cursor-pointer"
+                                    >
+                                        🔥 Xóa hết trang này
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => router.push("/admin/category")}
+                                    className="bg-white text-red-500 hover:bg-red-50 px-5 py-2.5 rounded-xl font-bold transition shadow text-sm cursor-pointer"
+                                >
+                                    ← Quay lại
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                  </td>
-                </tr>
-              ) : categories.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-400">
-                    Thùng rác trống. Không có danh mục nào bị xóa tạm.
-                  </td>
-                </tr>
-              ) : (
-                categories.map((item, index) => {
-                  const imageUrl = item.image
-                    ? item.image.startsWith("http")
-                      ? item.image
-                      : `http://127.0.0.1:8000/storage/${item.image}`
-                    : null;
 
-                  return (
-                    <tr key={item.id} className="hover:bg-gray-50 border-b border-gray-200">
-                      <td className="py-2 px-3 text-center border-r border-gray-200">
-                        <span className="inline-block px-2 py-0.5 border border-gray-300 bg-gray-50 text-gray-700 text-xs font-semibold rounded-xs">
-                          {(currentPage - 1) * pageSize + index + 1}
-                        </span>
-                      </td>
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full min-w-[600px]">
+                            <thead>
+                                <tr className="bg-gray-100 border-b-2 border-gray-200 text-xs uppercase tracking-wide text-gray-600">
+                                    <th className="py-4 px-5 text-left font-bold">STT</th>
+                                    <th className="py-4 px-5 text-left font-bold">Tên danh mục</th>
+                                    <th className="py-4 px-5 text-left font-bold">Slug</th>
+                                    <th className="py-4 px-5 text-left font-bold">Danh mục cha</th>
+                                    <th className="py-4 px-5 text-left font-bold">Ngày tạo</th>
+                                    <th className="py-4 px-5 text-left font-bold">Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-20 text-gray-400">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-10 h-10 border-4 border-red-200 border-t-red-500 rounded-full animate-spin" />
+                                                <span className="text-sm">Đang tải dữ liệu...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : categories.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="text-center py-20 text-gray-400">
+                                            <p className="text-5xl mb-3">🎉</p>
+                                            <p className="text-lg font-semibold text-gray-600">Thùng rác trống!</p>
+                                            <p className="text-sm mt-1">Không có danh mục nào bị xóa</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    categories.map((item, index) => (
+                                        <tr
+                                            key={item.id}
+                                            className={`border-b transition ${
+                                                index % 2 === 0
+                                                    ? "bg-white hover:bg-red-50"
+                                                    : "bg-gray-50 hover:bg-red-50"
+                                            }`}
+                                        >
+                                            {/* STT */}
+                                            <td className="py-4 px-5">
+                                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-500 font-bold text-sm">
+                                                    {(currentPage - 1) * PAGE_SIZE + index + 1}
+                                                </span>
+                                            </td>
 
-                      <td className="py-2 px-3 text-center border-r border-gray-200">
-                        <div className="w-10 h-9 mx-auto border border-gray-200 bg-gray-50 overflow-hidden flex items-center justify-center rounded-xs opacity-75">
-                          {imageUrl ? (
-                            <Image
-                              src={imageUrl}
-                              alt={item.name || "ảnh"}
-                              width={40}
-                              height={36}
-                              unoptimized
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <Layers className="w-4 h-4 text-gray-300" />
-                          )}
+                                            {/* Tên */}
+                                            <td className="py-4 px-5">
+                                                <p className="font-semibold text-gray-500 line-through">
+                                                    {item.name || "Không có tên"}
+                                                </p>
+                                            </td>
+
+                                            {/* Slug */}
+                                            <td className="py-4 px-5">
+                                                <code className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                                                    {item.slug || "-"}
+                                                </code>
+                                            </td>
+
+                                            {/* Danh mục cha */}
+                                            <td className="py-4 px-5 text-sm text-gray-400">
+                                                {!item.parent_id ? (
+                                                    <span className="text-blue-400 font-medium">Danh mục gốc</span>
+                                                ) : (
+                                                    <span>ID: {item.parent_id}</span>
+                                                )}
+                                            </td>
+
+                                            {/* Ngày tạo */}
+                                            <td className="py-4 px-5 text-sm text-gray-400">
+                                                {item.created_at
+                                                    ? new Date(item.created_at).toLocaleDateString("vi-VN", {
+                                                          day: "2-digit",
+                                                          month: "2-digit",
+                                                          year: "numeric",
+                                                      })
+                                                    : "-"}
+                                            </td>
+
+                                            {/* Hành động */}
+                                            <td className="py-4 px-5">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleRestore(item.id)}
+                                                        className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition hover:scale-105 shadow-sm cursor-pointer"
+                                                    >
+                                                        ♻️ Khôi phục
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleForceDelete(item.id)}
+                                                        className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition hover:scale-105 shadow-sm cursor-pointer"
+                                                    >
+                                                        🔥 Xóa hẳn
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="bg-gray-50 border-t px-8 py-5 flex justify-center items-center gap-2 flex-wrap">
+                            <button
+                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 border rounded-lg disabled:opacity-40 hover:bg-gray-100 transition text-sm font-medium cursor-pointer"
+                            >
+                                ← Trước
+                            </button>
+                            {Array.from({ length: totalPages }).map((_, i) => (
+                                <button
+                                    key={i + 1}
+                                    onClick={() => setCurrentPage(i + 1)}
+                                    className={`w-9 h-9 rounded-lg border font-bold text-sm transition cursor-pointer ${
+                                        currentPage === i + 1
+                                            ? "bg-red-500 text-white shadow-sm"
+                                            : "bg-white hover:bg-gray-100 text-gray-700"
+                                    }`}
+                                >
+                                    {i + 1}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 border rounded-lg disabled:opacity-40 hover:bg-gray-100 transition text-sm font-medium cursor-pointer"
+                            >
+                                Sau →
+                            </button>
                         </div>
-                      </td>
-
-                      <td className="py-2 px-4 border-r border-gray-200">
-                        <span className="text-gray-600 line-through font-semibold">
-                          {item.name || "Không có tên"}
-                        </span>
-                      </td>
-
-                      <td className="py-2 px-3 border-r border-gray-200 text-gray-500 font-mono text-[11px]">
-                        {item.slug || "-"}
-                      </td>
-
-                      <td className="py-2 px-3 border-r border-gray-200 text-gray-500">
-                        {item.parent_id ? `#${item.parent_id}` : "Gốc"}
-                      </td>
-
-                      <td className="py-2 px-3 text-center border-r border-gray-200">
-                        <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 border border-red-200 text-[10px] font-bold rounded-xs">
-                          Đã xóa tạm
-                        </span>
-                      </td>
-
-                      <td className="py-2 px-4 text-center">
-                        <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleRestore(item.id)}
-                            className="inline-flex items-center gap-1 bg-[#00a65a] hover:bg-[#008d4c] text-white px-2.5 py-1 rounded-xs text-[11px] font-bold shadow-2xs transition-colors"
-                          >
-                            <Undo2 className="w-3 h-3" />
-                            <span>Khôi phục</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleForceDelete(item.id)}
-                            className="inline-flex items-center gap-1 bg-[#dd4b39] hover:bg-[#d73925] text-white px-2.5 py-1 rounded-xs text-[11px] font-bold shadow-2xs transition-colors"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            <span>Xóa vĩnh viễn</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Phân trang */}
-        {totalPages > 1 && (
-          <div className="p-3 bg-gray-50 border-t border-gray-200 flex justify-between items-center text-xs text-gray-600">
-            <span>
-              Trang <strong>{currentPage}</strong> / <strong>{totalPages}</strong> ({pagination.total ?? 0} mục)
-            </span>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="px-2.5 py-1 border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 rounded-xs text-xs font-medium"
-              >
-                Trước
-              </button>
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  type="button"
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`w-7 h-7 border text-xs font-bold rounded-xs transition-colors ${
-                    currentPage === i + 1
-                      ? "bg-[#3c8dbc] text-white border-[#3c8dbc]"
-                      : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="px-2.5 py-1 border border-gray-300 bg-white hover:bg-gray-100 disabled:opacity-40 rounded-xs text-xs font-medium"
-              >
-                Sau
-              </button>
+                    )}
+                </div>
             </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+        </div>
+    );
 }
