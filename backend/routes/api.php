@@ -7,10 +7,12 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\MenuController;
+use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PostTopicController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ProductSaleController;
 use App\Http\Controllers\Api\StockDocumentController;
 use App\Http\Controllers\Api\StockDocumentItemController;
 use App\Http\Controllers\Api\SupplierController;
@@ -66,6 +68,17 @@ Route::get('/posts/{id}', [PostController::class, 'show']);
 
 Route::get('/pages', [PageController::class, 'index']);
 Route::get('/pages/{id}', [PageController::class, 'show']);
+
+// Đơn hàng (Orders - Client)
+Route::get('/orders', [OrderController::class, 'index']);
+Route::post('/orders', [OrderController::class, 'store']);
+Route::get('/orders/{id}', [OrderController::class, 'show']);
+Route::patch('/orders/{id}/cancel', [OrderController::class, 'cancel']);
+
+// Khuyến mãi & Kiểm tra mã giảm giá (Product Sales & Coupons - Client)
+Route::get('/productsales', [ProductSaleController::class, 'index']);
+Route::get('/productsales/{id}', [ProductSaleController::class, 'show']);
+Route::post('/productsales/check-coupon', [ProductSaleController::class, 'checkCoupon']);
 
 // =========================================================================
 // 3. ADMIN APIs (Dành cho trang quản trị hệ thống)
@@ -142,4 +155,16 @@ Route::prefix('admin')->group(function () {
 
     // 13. Chi tiết dòng phiếu kho (Stock Document Items)
     Route::apiResource('stock-document-items', StockDocumentItemController::class);
+
+    // 14. Đơn hàng (Orders - Admin)
+    Route::get('orders', [OrderController::class, 'index']);
+    Route::post('orders', [OrderController::class, 'store']);
+    Route::get('orders/{id}', [OrderController::class, 'show']);
+    Route::put('orders/{order}', [OrderController::class, 'update']);
+    Route::patch('orders/{order}', [OrderController::class, 'update']);
+    Route::patch('orders/{id}/cancel', [OrderController::class, 'cancel']);
+    Route::delete('orders/{order}', [OrderController::class, 'destroy']);
+
+    // 15. Khuyến mãi / Mã giảm giá (Product Sales - Admin)
+    Route::apiResource('productsales', ProductSaleController::class);
 });

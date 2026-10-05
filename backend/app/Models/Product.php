@@ -7,11 +7,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'products';
 
@@ -35,11 +36,22 @@ class Product extends Model
         'status'      => 'integer',
         'created_at'  => 'datetime',
         'updated_at'  => 'datetime',
+        'deleted_at'  => 'datetime',
     ];
 
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class, 'brand_id');
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(ProductSale::class, 'product_id');
     }
 
     public function carts(): HasMany
@@ -59,7 +71,7 @@ class Product extends Model
         $count = 1;
 
         while (true) {
-            $query = static::where('slug', $slug);
+            $query = static::withTrashed()->where('slug', $slug);
             if ($ignoreId !== null) {
                 $query->where('id', '!=', $ignoreId);
             }
