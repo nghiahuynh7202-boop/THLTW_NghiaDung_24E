@@ -40,7 +40,22 @@ export default function Header() {
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const [location] = useState("Ho Chi Minh city");
   const [searchQuery, setSearchQuery] = useState("");
-  const [cartCount] = useState(0);
+  const [cartCount] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("cart");
+        if (saved) {
+          const items = JSON.parse(saved);
+          return Array.isArray(items)
+            ? items.reduce((sum: number, item: { qty?: number }) => sum + (item.qty || 1), 0)
+            : 0;
+        }
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  });
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
