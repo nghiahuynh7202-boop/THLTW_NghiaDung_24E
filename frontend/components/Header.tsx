@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,14 +10,60 @@ import {
   ChevronDown,
   Menu,
   X,
+  LogOut,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
+
+interface CurrentUser {
+  id: number;
+  name: string;
+  email: string;
+  role?: string;
+}
 
 export default function Header() {
   const router = useRouter();
+  const [user, setUser] = useState<CurrentUser | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("user");
+        return saved ? JSON.parse(saved) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const [location] = useState("Ho Chi Minh city");
   const [searchQuery, setSearchQuery] = useState("");
   const [cartCount] = useState(0);
+
+  const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    setUser(null);
+    setAccountMenuOpen(false);
+    alert("Đã đăng xuất thành công!");
+    router.push("/login");
+  };
+
+  // Close account dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        accountMenuRef.current &&
+        !accountMenuRef.current.contains(event.target as Node)
+      ) {
+        setAccountMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const subServices = [
     { name: "Điện hoa", image: "/images/434428_dien-hoa.png", href: "/category/dien-hoa" },
@@ -229,17 +275,102 @@ export default function Header() {
             </Link>
 
             {/* Tài khoản */}
-            <Link
-              href="/login"
-              className="flex flex-col items-center justify-center text-gray-800 hover:text-[#f68b1f] transition-colors group"
-            >
-              <div className="w-7 h-7 rounded-full border border-gray-800 group-hover:border-[#f68b1f] flex items-center justify-center transition-colors">
-                <User className="w-4 h-4 stroke-[1.5] text-gray-800 group-hover:text-[#f68b1f] transition-colors" />
-              </div>
-              <span className="text-[11px] text-gray-700 group-hover:text-[#f68b1f] font-normal mt-0.5">
-                Tài khoản
-              </span>
-            </Link>
+            <div className="relative" ref={accountMenuRef}>
+              {user ? (
+                <button
+                  type="button"
+                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                  className="flex flex-col items-center justify-center text-gray-800 hover:text-[#f68b1f] transition-colors group cursor-pointer focus:outline-none"
+                >
+                  <div className="w-7 h-7 rounded-full bg-orange-100 text-[#f68b1f] border border-orange-300 group-hover:border-[#f68b1f] flex items-center justify-center font-bold text-xs transition-colors">
+                    {user.name ? user.name.trim().charAt(0).toUpperCase() : "U"}
+                  </div>
+                  <span className="text-[11px] text-gray-700 group-hover:text-[#f68b1f] font-medium mt-0.5 max-w-[80px] truncate">
+                    {user.name.split(" ").slice(-1)[0] || "Tài khoản"}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                  className="flex flex-col items-center justify-center text-gray-800 hover:text-[#f68b1f] transition-colors group cursor-pointer focus:outline-none"
+                >
+                  <div className="w-7 h-7 rounded-full border border-gray-800 group-hover:border-[#f68b1f] flex items-center justify-center transition-colors">
+                    <User className="w-4 h-4 stroke-[1.5] text-gray-800 group-hover:text-[#f68b1f] transition-colors" />
+                  </div>
+                  <span className="text-[11px] text-gray-700 group-hover:text-[#f68b1f] font-normal mt-0.5">
+                    Tài khoản
+                  </span>
+                </button>
+              )}
+
+              {/* Dropdown Menu */}
+              {accountMenuOpen && (
+                <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 text-xs">
+                  {user ? (
+                    <>
+                      <div className="px-3.5 py-2.5 border-b border-gray-100 bg-orange-50/40">
+                        <p className="font-bold text-gray-800 truncate">{user.name}</p>
+                        <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
+                        <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-semibold bg-orange-100 text-[#f68b1f] rounded">
+                          {user.role === "admin" ? "Quản trị viên" : "Khách hàng"}
+                        </span>
+                      </div>
+
+                      {user.role === "admin" && (
+                        <div className="py-1 border-b border-gray-100">
+                          <Link
+                            href="/admin/products"
+                            onClick={() => setAccountMenuOpen(false)}
+                            className="flex items-center gap-2 px-3.5 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] transition-colors font-medium"
+                          >
+                            <span>Trang quản trị Admin</span>
+                          </Link>
+                        </div>
+                      )}
+
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2 px-3.5 py-2 text-red-600 hover:bg-red-50 transition-colors text-left font-medium"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Đăng xuất</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="px-3.5 py-2 border-b border-gray-100">
+                        <p className="font-semibold text-gray-800">Chào mừng bạn</p>
+                        <p className="text-[10px] text-gray-500">Đăng nhập để nhận ưu đãi</p>
+                      </div>
+
+                      <div className="p-2 space-y-1">
+                        <Link
+                          href="/login"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-semibold text-white bg-[#f68b1f] hover:bg-[#e67300] rounded-lg transition-colors shadow-2xs"
+                        >
+                          <LogIn className="w-3.5 h-3.5" />
+                          <span>Đăng nhập</span>
+                        </Link>
+
+                        <Link
+                          href="/register"
+                          onClick={() => setAccountMenuOpen(false)}
+                          className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Đăng ký tài khoản</span>
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
@@ -283,7 +414,50 @@ export default function Header() {
 
           {/* Mobile Nav Drawer */}
           {mobileMenuOpen && (
-            <div className="lg:hidden py-3 border-t border-gray-200 space-y-1 bg-white">
+            <div className="lg:hidden py-3 border-t border-gray-200 space-y-2 bg-white">
+              {/* Mobile Auth Status */}
+              <div className="p-3 bg-gray-50 rounded-lg mx-2 mb-2">
+                {user ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 text-[#f68b1f] border border-orange-300 flex items-center justify-center font-bold text-xs">
+                        {user.name ? user.name.trim().charAt(0).toUpperCase() : "U"}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <p className="font-bold text-gray-800 text-xs truncate">{user.name}</p>
+                        <p className="text-[10px] text-gray-500 truncate">{user.email}</p>
+                      </div>
+                    </div>
+                    <div className="pt-1 border-t border-gray-200">
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full py-1.5 px-3 text-center text-xs font-medium text-red-600 bg-white border border-red-200 rounded"
+                      >
+                        Đăng xuất
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Link
+                      href="/login"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex-1 py-2 text-center text-xs font-semibold text-white bg-[#f68b1f] rounded-lg"
+                    >
+                      Đăng nhập
+                    </Link>
+                    <Link
+                      href="/register"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex-1 py-2 text-center text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded-lg"
+                    >
+                      Đăng ký
+                    </Link>
+                  </div>
+                )}
+              </div>
+
               {navMenuItems.map((item, index) => (
                 <Link
                   key={index}

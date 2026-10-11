@@ -178,7 +178,7 @@ function EditProductContent() {
             console.error("❌ Lỗi cập nhật:", err?.response?.data || err.message);
             const errors = err?.response?.data?.errors;
             const msg = errors
-                ? Object.values(errors)[0]?.[0]
+                ? (Object.values(errors)[0] as any)?.[0]
                 : err?.response?.data?.message || err?.message || "Có lỗi xảy ra";
             alert("❌ " + msg);
         } finally {
