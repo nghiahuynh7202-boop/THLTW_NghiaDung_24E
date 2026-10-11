@@ -3,11 +3,12 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCategories, deleteCategory, CategoryItem } from "@/services/categoryServices";
+import { RefreshCw, Trash2, Plus, Edit2, Folder, Layers } from "lucide-react";
 
 function CategoryContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const refresh = searchParams.get("refresh");  
+  const refresh = searchParams.get("refresh");
 
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,7 +21,6 @@ function CategoryContent() {
     try {
       const res = (await getCategories()) as any;
 
-      // res từ axios unwrap = data server trả về
       let list: CategoryItem[] = [];
       if (Array.isArray(res)) {
         list = res;
@@ -32,7 +32,6 @@ function CategoryContent() {
         list = res.categories;
       }
 
-      console.log("Categories loaded:", list.length);
       setCategories(list);
     } catch (error) {
       console.error("Lỗi lấy danh mục:", error);
@@ -68,112 +67,139 @@ function CategoryContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">🗂️ Quản lý Danh mục</h1>
-          <p className="text-gray-600">Quản lý toàn bộ danh mục trong hệ thống</p>
+    <div className="min-h-screen bg-gray-50/60 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-5">
+        {/* Tiêu đề trang nhẹ nhàng, tinh gọn */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <Layers className="w-6 h-6 text-[#f68b1f]" />
+              <span>Quản lý Danh mục</span>
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Quản lý danh sách các danh mục hoa tươi và quà tặng
+            </p>
+          </div>
+
+          {/* Các nút hành động trên Header */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => router.push("/admin/category?refresh=" + Date.now())}
+              disabled={isLoading}
+              className="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3.5 py-2 rounded-lg text-xs font-medium transition shadow-2xs cursor-pointer disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+              <span>Làm mới</span>
+            </button>
+
+            <button
+              onClick={() => router.push("/admin/category/trash")}
+              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-lg text-xs font-medium transition shadow-2xs cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Thùng rác</span>
+            </button>
+
+            <button
+              onClick={() => router.push("/admin/category/create")}
+              className="inline-flex items-center gap-1.5 bg-[#f68b1f] hover:bg-[#e67300] text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Thêm danh mục</span>
+            </button>
+          </div>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-white">Danh sách danh mục</h2>
-                <p className="text-blue-100 mt-1">Tổng số: {categories.length} danh mục</p>
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => router.push("/admin/category?refresh=" + Date.now())}
-                  disabled={isLoading}
-                  className="bg-blue-400 text-white hover:bg-blue-500 disabled:opacity-50 px-6 py-3 rounded-xl font-bold transition duration-300 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer"
-                >
-                  {isLoading ? "⟳ Đang tải..." : "⟳ Làm mới"}
-                </button>
-                <button
-                  onClick={() => router.push("/admin/category/trash")}
-                  className="bg-red-500 text-white hover:bg-red-600 px-6 py-3 rounded-xl font-bold transition duration-300 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer"
-                >
-                  🗑 Thùng rác
-                </button>
-                <button
-                  onClick={() => router.push("/admin/category/create")}
-                  className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-xl font-bold transition duration-300 shadow-md hover:shadow-lg transform hover:scale-105 cursor-pointer"
-                >
-                  ✚ Thêm danh mục
-                </button>
-              </div>
+        {/* Khung Card chính: Bo góc nhẹ, viền xám hài hòa, không đậm màu */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+          {/* Thanh tiêu đề con */}
+          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-gray-800">Danh sách danh mục</span>
+              <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {categories.length}
+              </span>
             </div>
           </div>
 
-          {/* Table */}
+          {/* Bảng dữ liệu */}
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[800px]">
+            <table className="w-full text-left text-xs">
               <thead>
-                <tr className="bg-gray-100 border-b-2 border-gray-300">
-                  <th className="text-left py-4 px-6 font-bold text-gray-700 text-sm uppercase tracking-wide">STT</th>
-                  <th className="text-left py-4 px-6 font-bold text-gray-700 text-sm uppercase tracking-wide">Tên danh mục</th>
-                  <th className="text-left py-4 px-6 font-bold text-gray-700 text-sm uppercase tracking-wide">Slug</th>
-                  <th className="text-left py-4 px-6 font-bold text-gray-700 text-sm uppercase tracking-wide">Trạng thái</th>
-                  <th className="text-left py-4 px-6 font-bold text-gray-700 text-sm uppercase tracking-wide">Hành động</th>
+                <tr className="bg-gray-50/70 border-b border-gray-200 text-gray-600 font-semibold uppercase tracking-wider text-[11px]">
+                  <th className="py-3 px-4 w-16 text-center">STT</th>
+                  <th className="py-3 px-4">Tên danh mục</th>
+                  <th className="py-3 px-4">Đường dẫn (Slug)</th>
+                  <th className="py-3 px-4 text-center">Trạng thái</th>
+                  <th className="py-3 px-4 text-center w-28">Hành động</th>
                 </tr>
               </thead>
-              <tbody>
-                {currentCategories.length > 0 ? (
+              <tbody className="divide-y divide-gray-100">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-gray-400">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[#f68b1f] border-t-transparent rounded-full animate-spin" />
+                        <span>Đang tải danh mục...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : currentCategories.length > 0 ? (
                   currentCategories.map((item, index) => (
                     <tr
                       key={item.id}
-                      className={`border-b transition duration-200 ${index % 2 === 0 ? "bg-white hover:bg-blue-50" : "bg-gray-50 hover:bg-blue-50"
-                        }`}
+                      className="hover:bg-orange-50/20 transition-colors"
                     >
-                      <td className="py-5 px-6">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 font-bold text-sm">
-                          {(currentPage - 1) * itemsPerPage + index + 1}
+                      {/* STT */}
+                      <td className="py-3.5 px-4 text-center text-gray-500 font-medium">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
+
+                      {/* Tên */}
+                      <td className="py-3.5 px-4">
+                        <span className="font-semibold text-gray-800 text-xs">
+                          {item.name || "Không có tên"}
                         </span>
                       </td>
 
-                      <td className="py-5 px-6">
-                        <div className="font-semibold text-gray-900">
-                          {item.name || "Không có tên"}
-                        </div>
-                      </td>
-
-                      <td className="py-5 px-6">
-                        <code className="text-xs bg-gray-200 px-1.5 py-0.5 rounded text-gray-500">
+                      {/* Slug */}
+                      <td className="py-3.5 px-4">
+                        <span className="text-[11px] font-mono text-gray-500 bg-gray-100/80 px-2 py-0.5 rounded">
                           {item.slug || "-"}
-                        </code>
+                        </span>
                       </td>
 
-                      <td className="py-5 px-6">
+                      {/* Trạng thái */}
+                      <td className="py-3.5 px-4 text-center">
                         {Number(item.status) === 1 ? (
-                          <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase border border-emerald-200">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                             Hiển thị
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase border border-gray-300">
-                            <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                          <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-600 border border-gray-200 px-2.5 py-0.5 rounded-full text-[11px] font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-400" />
                             Đã ẩn
                           </span>
                         )}
                       </td>
 
-                      <td className="py-5 px-6">
-                        <div className="flex gap-2">
+                      {/* Hành động */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex items-center gap-1.5">
                           <button
                             onClick={() => router.push(`/admin/category/update?id=${item.id}`)}
-                            className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg font-semibold transition hover:scale-105 shadow-sm cursor-pointer"
-                            title="Sửa"
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-md transition cursor-pointer"
+                            title="Chỉnh sửa"
                           >
-                            ✏️
+                            <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg font-semibold transition hover:scale-105 shadow-sm cursor-pointer"
-                            title="Xóa"
+                            className="p-1.5 text-red-500 hover:bg-red-50 border border-red-200 rounded-md transition cursor-pointer"
+                            title="Xóa danh mục"
                           >
-                            🗑
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
@@ -181,8 +207,9 @@ function CategoryContent() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-10 text-gray-500">
-                      <p className="text-lg font-semibold">📭 Không có danh mục nào</p>
+                    <td colSpan={5} className="text-center py-10 text-gray-400">
+                      <Folder className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                      <p className="text-xs font-medium text-gray-500">Chưa có danh mục nào</p>
                     </td>
                   </tr>
                 )}
@@ -190,13 +217,13 @@ function CategoryContent() {
             </table>
           </div>
 
-          {/* Pagination */}
+          {/* Phân trang */}
           {pageCount > 1 && (
-            <div className="bg-gray-50 border-t px-8 py-6 flex justify-center items-center gap-2 flex-wrap">
+            <div className="bg-gray-50/50 border-t border-gray-100 px-5 py-3 flex justify-center items-center gap-1.5">
               <button
                 onClick={() => setCurrentPage((p) => p - 1)}
                 disabled={currentPage === 1}
-                className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-white disabled:opacity-40 cursor-pointer"
               >
                 Trước
               </button>
@@ -204,8 +231,11 @@ function CategoryContent() {
                 <button
                   key={i + 1}
                   onClick={() => setCurrentPage(i + 1)}
-                  className={`w-10 h-10 rounded-lg border font-bold cursor-pointer ${currentPage === i + 1 ? "bg-blue-600 text-white" : "bg-white hover:bg-gray-100"
-                    }`}
+                  className={`w-8 h-8 rounded-md text-xs font-medium cursor-pointer transition ${
+                    currentPage === i + 1
+                      ? "bg-[#f68b1f] text-white"
+                      : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
                 >
                   {i + 1}
                 </button>
@@ -213,7 +243,7 @@ function CategoryContent() {
               <button
                 onClick={() => setCurrentPage((p) => p + 1)}
                 disabled={currentPage === pageCount}
-                className="px-4 py-2 border rounded-lg disabled:opacity-50 hover:bg-gray-100 cursor-pointer"
+                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-white disabled:opacity-40 cursor-pointer"
               >
                 Sau
               </button>
@@ -227,7 +257,7 @@ function CategoryContent() {
 
 export default function AdminCategoriesPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-gray-500">Đang tải danh mục...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-gray-500 text-xs">Đang tải danh mục...</div>}>
       <CategoryContent />
     </Suspense>
   );
