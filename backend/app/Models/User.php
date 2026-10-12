@@ -58,6 +58,11 @@ class User extends Authenticatable
         return $this->hasMany(StockDocument::class, 'created_by');
     }
 
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class, 'user_id');
+    }
+
     public function scopeActive(Builder $query): void
     {
         $query->where('status', 1);

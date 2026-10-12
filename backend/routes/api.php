@@ -115,6 +115,8 @@ Route::prefix('admin')->group(function () {
     Route::apiResource('menus', MenuController::class);
 
     // 6. Quản lý người dùng (Users)
+    Route::patch('users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+    Route::get('users/{id}/orders', [UserController::class, 'orders']);
     Route::get('users/trash', [UserController::class, 'trash']);
     Route::patch('users/{id}/restore', [UserController::class, 'restore']);
     Route::delete('users/{id}/force', [UserController::class, 'forceDelete']);

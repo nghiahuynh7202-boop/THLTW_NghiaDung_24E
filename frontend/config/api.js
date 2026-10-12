@@ -8,7 +8,7 @@ const API_CONFIG = {
     get BASE_URL() {
         return getBaseUrl();
     },
-    TIMEOUT: 15000,
+    TIMEOUT: 30000,
     HEADERS: {
         Accept: "application/json",
         "Content-Type": "application/json",
