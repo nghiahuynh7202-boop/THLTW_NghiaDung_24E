@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import Banner from "../components/Banner";
-import CategorySlider from "../components/CategorySlider";
-import ProductCard from "../components/ProductCard";
+import Banner from "@/components/Banner";
+import CategorySlider from "@/components/CategorySlider";
+import ProductCard from "@/components/ProductCard";
 import { CheckCircle2, Flame, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function HomePage() {

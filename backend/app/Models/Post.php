@@ -15,6 +15,17 @@ class Post extends Model
 
     protected $table = 'posts';
 
+    public static function bootSoftDeletes(): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at')) {
+                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
+            }
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+    }
+
     const UPDATED_AT = null;
 
     protected $fillable = [
@@ -37,7 +48,7 @@ class Post extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class)->withoutGlobalScopes();
     }
 
     public function topic(): BelongsTo

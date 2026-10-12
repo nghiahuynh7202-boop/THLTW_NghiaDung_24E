@@ -16,6 +16,17 @@ class Product extends Model
 
     protected $table = 'products';
 
+    public static function bootSoftDeletes(): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'deleted_at')) {
+                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
+            }
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+    }
+
     protected $fillable = [
         'category_id',
         'brand_id',
