@@ -52,12 +52,14 @@ class BrandController extends Controller
     /**
      * GET /api/admin/brands/{brand} hoặc GET /api/brands/{brand} — Chi tiết thương hiệu
      */
-public function show($id): BrandResource
-{
-    $brand = Brand::findOrFail($id);
+    public function show($id): BrandResource
+    {
+        $brand = is_numeric($id)
+            ? Brand::findOrFail($id)
+            : Brand::where('slug', $id)->firstOrFail();
 
-    return new BrandResource($brand);
-}
+        return new BrandResource($brand);
+    }
 
     /**
      * PUT|PATCH /api/admin/brands/{brand} — Cập nhật thương hiệu
@@ -120,6 +122,7 @@ public function destroy(Brand $brand): JsonResponse
     public function restore(int|string $id): JsonResponse
     {
         $brand = Brand::onlyTrashed()->findOrFail($id);
+        $brand->update(['status' => 1]);
         $brand->restore();
 
         return (new BrandResource($brand))
