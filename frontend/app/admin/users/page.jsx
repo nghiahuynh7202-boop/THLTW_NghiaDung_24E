@@ -26,7 +26,7 @@ export default function UsersPage() {
 
   // 2. Chặn hoặc Mở chặn tài khoản
   const handleToggleBlock = async (user) => {
-    const isBlock = Number(user.status) === 1;
+    const isBlock = Number(user.status) === 1; 
     if (!window.confirm(isBlock ? `Chặn "${user.name}"?` : `Mở chặn "${user.name}"?`)) return;
 
     await toggleUserStatus(user.id);

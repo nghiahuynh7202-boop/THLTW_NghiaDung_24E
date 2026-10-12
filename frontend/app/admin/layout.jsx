@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Layers, Award, ShoppingBag, Users, Image as ImageIcon, MessageSquare, FileText, Tag, LogOut, Phone, Mail, User, ChevronDown, Menu, Sparkles, } from "lucide-react";
+import { LayoutDashboard, Package, Layers, Award, ShoppingBag, Users, Image as ImageIcon, MessageSquare, FileText, Tag, LogOut, Phone, Mail, User, ChevronDown, Menu, Sparkles, Navigation, } from "lucide-react";
 export default function AdminLayout({ children, }) {
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -15,6 +15,7 @@ export default function AdminLayout({ children, }) {
         { name: "Quản lý thương hiệu", href: "/admin/brands", icon: Award },
         { name: "Khuyến mãi & Sale", href: "/admin/sales", icon: Tag },
         { name: "Quản lý banner", href: "/admin/banners", icon: ImageIcon },
+        { name: "Quản lý menu", href: "/admin/menus", icon: Navigation },
         { name: "Quản lý bài viết", href: "/admin/posts", icon: FileText },
         { name: "Quản lý thư liên hệ", href: "/admin/contacts", icon: MessageSquare, badge: "2" },
         { name: "Quản lý khách hàng", href: "/admin/users", icon: Users },
