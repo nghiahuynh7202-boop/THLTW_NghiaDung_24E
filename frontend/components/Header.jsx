@@ -14,6 +14,27 @@ export default function Header() {
     const accountMenuRef = useRef(null);
     const [location] = useState("Ho Chi Minh city");
     const [searchQuery, setSearchQuery] = useState("");
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        let ticking = false;
+        const handleScroll = () => {
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const scrollY = window.scrollY;
+                    if (scrollY > 120) {
+                        setIsScrolled(true);
+                    } else if (scrollY <= 15) {
+                        setIsScrolled(false);
+                    }
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        };
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
     useEffect(() => {
         setIsMounted(true);
         try {
@@ -82,9 +103,9 @@ export default function Header() {
             router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
         }
     };
-    return (<header className="sticky top-0 z-50 w-full bg-white shadow-xs transition-all font-sans">
+    return (<header className={`sticky top-0 z-50 w-full bg-white transition-shadow duration-200 font-sans ${isScrolled ? "shadow-md" : "shadow-xs"}`}>
       {/* 1. TOP BAR MÀU CAM */}
-      <div className="bg-[#f68b1f] text-white text-xs py-1 px-4 sm:px-8">
+      <div className={`bg-[#f68b1f] text-white text-xs overflow-hidden transition-all duration-200 ease-in-out ${isScrolled ? "max-h-0 py-0 opacity-0 pointer-events-none" : "max-h-12 py-1 opacity-100 px-4 sm:px-8"}`}>
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Chọn địa điểm */}
           <div className="flex items-center gap-2 cursor-pointer group">
@@ -111,7 +132,7 @@ export default function Header() {
       </div>
 
       {/* 2. SUB-BRANDS / SERVICES BAR */}
-      <div className="hidden lg:block border-b border-gray-100 bg-[#fdfdfd]">
+      <div className={`hidden lg:block bg-[#fdfdfd] overflow-hidden transition-all duration-200 ease-in-out ${isScrolled ? "max-h-0 py-0 opacity-0 pointer-events-none border-none" : "max-h-20 border-b border-gray-100 opacity-100"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-1.5">
           <div className="grid grid-cols-8 divide-x divide-gray-100 text-center text-xs">
             {subServices.map((item, idx) => (<Link key={idx} href={item.href} className="px-2 py-1 flex flex-col items-center justify-center hover:bg-orange-50/40 transition-colors group">
@@ -127,7 +148,7 @@ export default function Header() {
       </div>
 
       {/* 3. MAIN HEADER SECTION (LAYOUT CHUẨN PIXEL-PERFECT THEO ẢNH CHỤP) */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-2.5 sm:py-3">
+      <div className={`max-w-7xl mx-auto px-4 sm:px-8 transition-all duration-300 ${isScrolled ? "py-1.5 sm:py-2" : "py-2.5 sm:py-3"}`}>
         <div className="flex items-center justify-between gap-4 lg:gap-8">
           
           {/* CỘT TRÁI: LOGO */}
@@ -276,7 +297,7 @@ export default function Header() {
       </div>
 
       {/* 4. MAIN NAVIGATION MENU */}
-      <nav className="border-t border-b border-gray-200 bg-[#fafafa]">
+      <nav className={`bg-[#fafafa] overflow-hidden transition-all duration-200 ease-in-out ${isScrolled ? "max-h-0 py-0 opacity-0 pointer-events-none border-none" : "max-h-20 border-t border-b border-gray-200 opacity-100"}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           {/* Desktop Nav */}
           <div className="hidden lg:flex items-center justify-between text-xs font-bold text-gray-700">
