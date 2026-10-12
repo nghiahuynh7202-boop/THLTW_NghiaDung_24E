@@ -19,6 +19,20 @@ class PostRequest extends FormRequest
         $postId = $this->route('post') ? ($this->route('post')->id ?? $this->route('post')) : null;
         $isCreate = $this->isMethod('post');
 
+        $hasDeletedAt = false;
+        try {
+            $hasDeletedAt = \Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at');
+        } catch (\Throwable $e) {
+            $hasDeletedAt = false;
+        }
+
+        $titleRule = Rule::unique('posts', 'title')->ignore($postId);
+        $slugRule = Rule::unique('posts', 'slug')->ignore($postId);
+        if ($hasDeletedAt) {
+            $titleRule = $titleRule->whereNull('deleted_at');
+            $slugRule = $slugRule->whereNull('deleted_at');
+        }
+
         return [
             'user_id'  => ['nullable', 'integer', 'exists:users,id'],
             'topic_id' => ['nullable', 'integer', 'exists:post_topics,id'],
@@ -26,13 +40,13 @@ class PostRequest extends FormRequest
                 $isCreate ? 'required' : 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('posts', 'title')->ignore($postId)->whereNull('deleted_at'),
+                $titleRule,
             ],
             'slug'     => [
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('posts', 'slug')->ignore($postId)->whereNull('deleted_at'),
+                $slugRule,
             ],
             'image'    => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'summary'  => ['nullable', 'string', 'max:500'],

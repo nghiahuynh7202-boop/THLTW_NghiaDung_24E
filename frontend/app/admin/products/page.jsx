@@ -90,10 +90,7 @@ function ProductContent() {
 
           {/* Các nút hành động */}
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={() => router.push("/admin/products?refresh=" + Date.now())} disabled={isLoading} className="inline-flex items-center gap-1.5 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-3.5 py-2 rounded-lg text-xs font-medium transition shadow-2xs cursor-pointer disabled:opacity-50">
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`}/>
-              <span>Làm mới</span>
-            </button>
+           
 
             <button onClick={() => router.push("/admin/products/trash")} className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-lg text-xs font-medium transition shadow-2xs cursor-pointer">
               <Trash2 className="w-3.5 h-3.5"/>
