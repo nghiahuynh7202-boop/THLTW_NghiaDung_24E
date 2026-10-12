@@ -16,8 +16,9 @@ class ProductRequest extends FormRequest
 
     public function rules(): array
     {
-        $productId = $this->route('product') ? ($this->route('product')->id ?? $this->route('product')) : null;
-        $isCreate = $this->isMethod('post');
+        $productRoute = $this->route('product') ?? $this->route('id');
+        $productId = is_object($productRoute) ? ($productRoute->id ?? null) : $productRoute;
+        $isCreate = $this->isMethod('post') && !$this->has('_method');
 
         return [
             'category_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'exists:categories,id'],
@@ -35,6 +36,7 @@ class ProductRequest extends FormRequest
                 Rule::unique('products', 'slug')->ignore($productId)->whereNull('deleted_at'),
             ],
             'price'       => [$isCreate ? 'required' : 'sometimes', 'numeric', 'min:0'],
+            'sale_price'  => ['nullable', 'numeric', 'min:0', 'lt:price'],
             'qty'         => ['nullable', 'integer', 'min:0'],
             'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'description' => ['nullable', 'string'],
@@ -53,11 +55,14 @@ class ProductRequest extends FormRequest
             'brand_id.exists'      => 'Thương hiệu đã chọn không hợp lệ.',
             'name.required'        => 'Tên sản phẩm không được để trống.',
             'name.max'             => 'Tên sản phẩm không vượt quá 200 ký tự.',
-            'name.unique'          => 'Tên sản phẩm đã tồn tại.',
+            'name.unique'          => 'Tên sản phẩm đã tồn tại, vui lòng đặt tên khác.',
             'slug.unique'          => 'Slug sản phẩm đã tồn tại.',
             'price.required'       => 'Giá sản phẩm không được để trống.',
             'price.numeric'        => 'Giá sản phẩm phải là số.',
             'price.min'            => 'Giá sản phẩm không được âm.',
+            'sale_price.numeric'   => 'Giá sale phải là số.',
+            'sale_price.min'       => 'Giá sale không được âm.',
+            'sale_price.lt'        => 'Giá bán gốc phải cao hơn giá sale (giá sale phải nhỏ hơn giá bán).',
             'qty.integer'          => 'Số lượng phải là số nguyên.',
             'qty.min'              => 'Số lượng không được âm.',
             'image.image'          => 'File tải lên phải là hình ảnh.',

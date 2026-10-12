@@ -24,3 +24,52 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Hiệu ứng ngọn lửa bùng cháy sống động cho Flash Sale */
+@keyframes flame-glow {
+  0%, 100% {
+    transform: scale(1) rotate(-1deg);
+    filter: drop-shadow(0 0 3px #ff3b30) drop-shadow(0 0 8px #ff9500);
+  }
+  25% {
+    transform: scale(1.1, 0.95) rotate(2deg);
+    filter: drop-shadow(0 0 6px #ff2d55) drop-shadow(0 0 12px #ffcc00);
+  }
+  50% {
+    transform: scale(0.95, 1.08) rotate(-2deg);
+    filter: drop-shadow(0 0 4px #ff3b30) drop-shadow(0 0 9px #ff9500);
+  }
+  75% {
+    transform: scale(1.06, 1.02) rotate(1deg);
+    filter: drop-shadow(0 0 7px #ff2d55) drop-shadow(0 0 14px #ffcc00);
+  }
+}
+
+.animate-flame {
+  animation: flame-glow 1.4s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+/* Hiệu ứng quét tia sáng lướt qua badge Flash Sale */
+@keyframes badge-shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  30%, 100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+.animate-shimmer {
+  animation: badge-shimmer 3s ease-in-out infinite;
+}

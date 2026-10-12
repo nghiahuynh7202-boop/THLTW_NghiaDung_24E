@@ -16,10 +16,15 @@ class ProductResource extends JsonResource
             'name'        => $this->name,
             'slug'        => $this->slug,
             'price'       => $this->price,
+            'sale_price'  => $this->relationLoaded('sales')
+                ? ($this->sales?->first(fn ($s) => (int)$s->status === 1)?->pricesale ?? null)
+                : ($this->attributes['sale_price'] ?? \App\Models\ProductSale::where('product_id', $this->id)->where('status', 1)->value('pricesale')),
             'qty'         => $this->qty,
-            'image'       => $this->image ? asset('storage/' . $this->image) : null,
+            'image'       => $this->image ? (str_starts_with($this->image, 'http') ? $this->image : asset('storage/' . ltrim($this->image, '/'))) : null,
             'description' => $this->description,
             'status'      => $this->status,
+            'deleted_at'  => $this->deleted_at,
+            'created_at'  => $this->created_at,
 
 
             // Chỉ nạp khi controller gọi with()

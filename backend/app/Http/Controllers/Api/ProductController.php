@@ -15,7 +15,7 @@ class ProductController extends Controller
 
 public function index(Request $request)
 {
-    $query = Product::with(['category', 'brand'])->latest('id');
+    $query = Product::with(['category', 'brand', 'sales'])->latest('id');
 
     
     if (! $request->is('api/admin/*')) {
@@ -37,9 +37,25 @@ public function index(Request $request)
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
+        $salePrice = $data['sale_price'] ?? null;
+        unset($data['sale_price']);
+
         $product = Product::create($data);
 
-        return (new ProductResource($product->load(['category', 'brand'])))
+        // Lưu thông tin khuyến mãi vào bảng productsale nếu có nhập sale_price
+        if ($salePrice !== null && (float)$salePrice > 0) {
+            \App\Models\ProductSale::create([
+                'name'       => 'Khuyến mãi ' . $product->name,
+                'product_id' => $product->id,
+                'pricesale'  => (int)$salePrice,
+                'apply_to'   => 'product',
+                'date_begin' => now(),
+                'date_end'   => now()->addYears(1),
+                'status'     => 1,
+            ]);
+        }
+
+        return (new ProductResource($product->load(['category', 'brand', 'sales'])))
             ->additional(['message' => 'Thêm sản phẩm thành công.'])
             ->response()
             ->setStatusCode(201);
@@ -48,9 +64,9 @@ public function index(Request $request)
     /**
      * GET /api/admin/products/{product} hoặc GET /api/products/{product} — Chi tiết sản phẩm
      */
-        public function show($id): ProductResource
+    public function show($id): ProductResource
     {
-        $product = Product::with(['category', 'brand'])->findOrFail($id);
+        $product = Product::with(['category', 'brand', 'sales'])->findOrFail($id);
 
         return new ProductResource($product);
     }
@@ -77,9 +93,26 @@ public function index(Request $request)
             unset($data['image']); // Không gửi ảnh mới thì giữ nguyên ảnh cũ
         }
 
+        $salePrice = $data['sale_price'] ?? null;
+        unset($data['sale_price']);
+
         $product->update($data);
 
-        return (new ProductResource($product->load(['category', 'brand'])))
+        // Cập nhật hoặc tạo mới bản ghi khuyến mãi
+        if ($salePrice !== null && (float)$salePrice > 0) {
+            \App\Models\ProductSale::updateOrCreate(
+                ['product_id' => $product->id, 'apply_to' => 'product'],
+                [
+                    'name'       => 'Khuyến mãi ' . $product->name,
+                    'pricesale'  => (int)$salePrice,
+                    'date_begin' => now(),
+                    'date_end'   => now()->addYears(1),
+                    'status'     => 1,
+                ]
+            );
+        }
+
+        return (new ProductResource($product->load(['category', 'brand', 'sales'])))
             ->additional(['message' => 'Cập nhật sản phẩm thành công.'])
             ->response();
     }
@@ -104,7 +137,7 @@ public function trash(Request $request)
 {
     $perPage = (int) $request->input('per_page', 12);
     $products = Product::onlyTrashed()
-        ->with(['category', 'brand'])
+        ->with(['category', 'brand', 'sales'])
         ->latest('deleted_at')
         ->paginate($perPage);
 
@@ -117,6 +150,7 @@ public function trash(Request $request)
     public function restore(int|string $id): JsonResponse
     {
         $product = Product::onlyTrashed()->findOrFail($id);
+        $product->update(['status' => 1]);
         $product->restore();
 
         return (new ProductResource($product->load(['category', 'brand'])))
@@ -130,6 +164,14 @@ public function trash(Request $request)
     public function forceDelete(int|string $id): JsonResponse
     {
         $product = Product::withTrashed()->findOrFail($id);
+
+        try {
+            // Xóa dữ liệu liên quan ở bảng productsale và cart để tránh lỗi khóa ngoại
+            \App\Models\ProductSale::where('product_id', $product->id)->delete();
+            \App\Models\Cart::where('product_id', $product->id)->delete();
+        } catch (\Throwable $e) {
+            // Bỏ qua nếu bảng không tồn tại hoặc không có quan hệ
+        }
 
         // Xóa file ảnh khỏi storage khi xóa vĩnh viễn
         if ($product->image) {
