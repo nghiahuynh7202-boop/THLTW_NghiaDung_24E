@@ -1,6 +1,18 @@
 import axiosClient from "@/lib/axiosClient";
 import axiosAdmin from "@/lib/axiosAdmin";
-// 1. Lấy danh sách danh mục cho Admin (lấy toàn bộ cả danh mục cha và con)
+// 1. Lấy danh sách danh mục công khai (Frontend Shop)
+export async function getPublicCategories() {
+    try {
+        const res = await axiosClient.get("/categories", { params: { per_page: 100 } });
+        if (Array.isArray(res)) return res;
+        if (Array.isArray(res?.data)) return res.data;
+        return [];
+    } catch (err) {
+        console.error("Lỗi getPublicCategories:", err);
+        return [];
+    }
+}
+// 2. Lấy danh sách danh mục cho Admin (lấy toàn bộ cả danh mục cha và con)
 export async function getCategories(params) {
     return axiosAdmin.get("/admin/categories", { params });
 }
