@@ -21,6 +21,8 @@ export async function getBrands(params = {}) {
     return extractList(res);
 }
 
+export const getActiveBrands = getBrands;
+
 export async function getBrand(id) {
     const res = await axiosClient.get(`/brands/${id}`);
     return extractItem(res);

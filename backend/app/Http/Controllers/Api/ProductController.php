@@ -66,7 +66,10 @@ public function index(Request $request)
      */
     public function show($id): ProductResource
     {
-        $product = Product::with(['category', 'brand', 'sales'])->findOrFail($id);
+        $product = Product::with(['category', 'brand', 'sales'])
+            ->where('id', $id)
+            ->orWhere('slug', $id)
+            ->firstOrFail();
 
         return new ProductResource($product);
     }

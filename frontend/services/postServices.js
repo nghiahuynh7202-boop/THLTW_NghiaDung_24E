@@ -15,7 +15,22 @@ function extractItem(res) {
   return res?.data?.data ?? res?.data ?? res ?? null;
 }
 
-// 1. Lấy danh sách bài viết (Admin)
+// 1. Lấy danh sách bài viết công khai (Client)
+export async function getPublicPosts(params = {}) {
+  try {
+    const res = await axiosClient.get("/posts", { params });
+    return extractList(res);
+  } catch {
+    try {
+      const res = await axiosAdmin.get(ADMIN_POSTS, { params });
+      return extractList(res);
+    } catch {
+      return [];
+    }
+  }
+}
+
+// 2. Lấy danh sách bài viết (Admin)
 export async function getAdminPosts(params = {}) {
   const res = await axiosAdmin.get(ADMIN_POSTS, { params });
   return {
