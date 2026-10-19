@@ -27,8 +27,17 @@ export async function getProducts(params = {}) {
     return extractList(res);
 }
 export async function getProductById(id) {
-    const res = await axiosClient.get(`/products/${id}`);
-    return extractItem(res);
+    try {
+        const res = await axiosClient.get(`/products/${id}`);
+        return extractItem(res);
+    } catch {
+        try {
+            const res = await axiosAdmin.get(`/admin/products/${id}`);
+            return extractItem(res);
+        } catch {
+            return null;
+        }
+    }
 }
 export async function searchProducts(keyword, page = 1, pageSize = 10) {
     const res = await axiosClient.get("/searchProducts", {

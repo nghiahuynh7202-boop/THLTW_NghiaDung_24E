@@ -96,7 +96,10 @@ class PostController extends Controller
     public function destroy(Post $post): JsonResponse
     {
         $post->update(['status' => 0]);
-        $post->delete();
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at')) {
+            $post->delete();
+        }
 
         return response()->json([
             'message' => 'Xóa tạm bài viết thành công (đã chuyển vào thùng rác).',
@@ -109,6 +112,12 @@ class PostController extends Controller
     public function trash(Request $request): AnonymousResourceCollection
     {
         $perPage = (int) $request->input('per_page', 12);
+
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at')) {
+            $empty = Post::whereRaw('1 = 0')->paginate($perPage);
+            return PostResource::collection($empty);
+        }
+
         $posts = Post::onlyTrashed()
             ->with(['topic', 'user'])
             ->latest('deleted_at')

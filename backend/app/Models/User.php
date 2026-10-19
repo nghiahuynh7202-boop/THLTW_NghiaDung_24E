@@ -18,6 +18,17 @@ class User extends Authenticatable
 
     protected $table = 'users';
 
+    public static function bootSoftDeletes(): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'deleted_at')) {
+                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
+            }
+        } catch (\Throwable $e) {
+            // Ignore schema error if table not ready
+        }
+    }
+
     protected $fillable = [
         'name',
         'email',

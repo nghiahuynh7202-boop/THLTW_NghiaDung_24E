@@ -15,6 +15,17 @@ class Brand extends Model
 
     protected $table = 'brands';
 
+    public static function bootSoftDeletes(): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('brands', 'deleted_at')) {
+                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
+            }
+        } catch (\Throwable $e) {
+            // Ignore
+        }
+    }
+
     // Bảng chỉ có cột created_at, tắt chế độ tự động cập nhật updated_at
     const UPDATED_AT = null;
 

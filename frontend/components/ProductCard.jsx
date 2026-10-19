@@ -1,11 +1,24 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ShoppingCart, Eye, ShoppingBag } from "lucide-react";
+import { ShoppingCart, Eye } from "lucide-react";
 
 export default function ProductCard({ product, onAddToCart }) {
+  const [imgSrc, setImgSrc] = useState(() => {
+    const raw = product?.image ? String(product.image).trim() : "";
+    if (!raw) return "/images/hoa.jpg";
+    if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:")) {
+      return raw;
+    }
+    if (raw.startsWith("/images/")) {
+      return raw;
+    }
+    const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
+    const cleanPath = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+    return `http://${hostname}:8000/storage/${cleanPath}`;
+  });
+
   const formatPrice = (amount) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
   };
@@ -14,20 +27,22 @@ export default function ProductCard({ product, onAddToCart }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden relative border border-gray-100 hover:-translate-y-1 p-2.5 sm:p-3">
-      {/* 1. KHU VỰC HÌNH ẢNH (BỎ TOÀN BỘ BADGE SALE/NEW Ở TRÊN THEO YÊU CẦU) */}
+      {/* 1. KHU VỰC HÌNH ẢNH */}
       <div className="relative w-full aspect-[4/4.8] bg-white rounded-xl flex items-center justify-center overflow-hidden">
         {/* Link & Ảnh sản phẩm */}
         <Link
           href={productUrl}
           className="w-full h-full flex items-center justify-center"
         >
-          <Image
-            src={product.image || "/images/hoa.jpg"}
-            alt={product.name}
-            width={260}
-            height={320}
+          <img
+            src={imgSrc}
+            alt={product.name || "Hoa tươi"}
             className="w-full h-full object-contain group-hover:scale-108 transition-transform duration-300 ease-out"
             loading="lazy"
+            onError={() => {
+              // Nếu ảnh bị lỗi hoặc không tìm thấy trên server, tự động dùng ảnh dự phòng
+              setImgSrc("/images/hoa.jpg");
+            }}
           />
         </Link>
 
@@ -60,9 +75,9 @@ export default function ProductCard({ product, onAddToCart }) {
         </div>
       </div>
 
-      {/* 2. KHU VỰC THÔNG TIN (TÊN MÀU XANH LÁ + GIÁ MÀU CAM ĐỎ ĐÚNG THEO ẢNH) */}
+      {/* 2. KHU VỰC THÔNG TIN */}
       <div className="pt-3 pb-1 text-center bg-white flex flex-col items-center justify-center">
-        {/* Tên sản phẩm màu xanh lá cây đặc trưng */}
+        {/* Tên sản phẩm */}
         <Link
           href={productUrl}
           title={product.name}
