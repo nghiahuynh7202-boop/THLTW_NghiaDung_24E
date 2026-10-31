@@ -13,8 +13,10 @@ const CartContext = createContext({
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     try {
       const saved = localStorage.getItem("cart");
       if (saved) {
@@ -35,13 +37,28 @@ export function CartProvider({ children }) {
   };
 
   const addToCart = (product, quantity = 1) => {
+    const qtyToAdd = Math.max(1, Number(quantity) || 1);
     const existingIndex = cartItems.findIndex((item) => item.id === product.id);
     let updated;
     if (existingIndex > -1) {
       updated = [...cartItems];
-      updated[existingIndex].quantity = (updated[existingIndex].quantity || 1) + quantity;
+      const currentQty = Number(updated[existingIndex].quantity ?? updated[existingIndex].qty ?? 1);
+      const newQty = currentQty + qtyToAdd;
+      updated[existingIndex] = {
+        ...updated[existingIndex],
+        ...product,
+        quantity: newQty,
+        qty: newQty,
+      };
     } else {
-      updated = [...cartItems, { ...product, quantity }];
+      updated = [
+        ...cartItems,
+        {
+          ...product,
+          quantity: qtyToAdd,
+          qty: qtyToAdd,
+        },
+      ];
     }
     saveCart(updated);
   };
@@ -52,12 +69,13 @@ export function CartProvider({ children }) {
   };
 
   const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
+    const q = Number(quantity);
+    if (q <= 0) {
       removeFromCart(productId);
       return;
     }
     const updated = cartItems.map((item) =>
-      item.id === productId ? { ...item, quantity } : item
+      item.id === productId ? { ...item, quantity: q, qty: q } : item
     );
     saveCart(updated);
   };
@@ -66,7 +84,12 @@ export function CartProvider({ children }) {
     saveCart([]);
   };
 
-  const totalCount = cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
+  const totalCount = isMounted
+    ? cartItems.reduce(
+        (acc, item) => acc + Number(item.quantity ?? item.qty ?? 1),
+        0
+      )
+    : 0;
 
   return (
     <CartContext.Provider

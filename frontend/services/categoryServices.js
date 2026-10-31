@@ -5,6 +5,7 @@ export async function getPublicCategories() {
     try {
         const res = await axiosClient.get("/categories", { params: { per_page: 100 } });
         if (Array.isArray(res)) return res;
+        if (Array.isArray(res?.data?.data)) return res.data.data;
         if (Array.isArray(res?.data)) return res.data;
         return [];
     } catch (err) {
@@ -16,12 +17,19 @@ export async function getPublicCategories() {
 export async function getCategories(params) {
     return axiosAdmin.get("/admin/categories", { params });
 }
-// 2. Lấy chi tiết danh mục theo ID
+// 3. Lấy chi tiết danh mục theo ID
 export async function getCategory(id) {
-    return axiosClient.get(`/categories/${id}`);
+    const res = await axiosClient.get(`/categories/${id}`);
+    return res?.data?.data ?? res?.data ?? res ?? null;
 }
 export async function getCategoryById(id) {
-    return axiosClient.get(`/categories/${id}`);
+    try {
+        const res = await axiosAdmin.get(`/admin/categories/${id}`);
+        return res?.data?.data ?? res?.data ?? res ?? null;
+    } catch {
+        const res = await axiosClient.get(`/categories/${id}`);
+        return res?.data?.data ?? res?.data ?? res ?? null;
+    }
 }
 // 3. Thêm mới danh mục (Admin)
 export async function createCategory(data) {

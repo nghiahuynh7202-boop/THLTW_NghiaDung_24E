@@ -22,6 +22,14 @@ public function index(Request $request)
         $query->active();
     }
 
+    // Lọc theo category_id và loại trừ sản phẩm hiện tại (dùng cho sản phẩm liên quan)
+    if ($request->filled('category_id')) {
+        $query->where('category_id', $request->input('category_id'));
+    }
+    if ($request->filled('exclude_id')) {
+        $query->where('id', '!=', $request->input('exclude_id'));
+    }
+
     $perPage = (int) $request->input('per_page', 12);
     $products = $query->paginate($perPage);
 

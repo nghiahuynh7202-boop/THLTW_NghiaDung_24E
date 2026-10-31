@@ -22,6 +22,7 @@ class ProductResource extends JsonResource
             'qty'         => $this->qty,
             'image'       => $this->image ? (str_starts_with($this->image, 'http') ? $this->image : asset('storage/' . ltrim($this->image, '/'))) : null,
             'description' => $this->description,
+            'is_featured' => (int)($this->is_featured ?? 0),
             'status'      => $this->status,
             'deleted_at'  => $this->deleted_at,
             'created_at'  => $this->created_at,

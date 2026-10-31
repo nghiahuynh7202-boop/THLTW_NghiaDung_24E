@@ -156,8 +156,15 @@ function ProductContent() {
 
                         {/* Tên + slug */}
                         <td className="py-3 px-4">
-                          <div className="font-semibold text-gray-800 text-xs">
-                            {item.name || "Không có tên"}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-semibold text-gray-800 text-xs">
+                              {item.name || "Không có tên"}
+                            </span>
+                            {Number(item.is_featured) === 1 && (
+                              <span className="inline-flex items-center text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+                                ⭐ Nổi bật
+                              </span>
+                            )}
                           </div>
                           <span className="text-[10px] font-mono text-gray-400">
                             {item.slug || "-"}

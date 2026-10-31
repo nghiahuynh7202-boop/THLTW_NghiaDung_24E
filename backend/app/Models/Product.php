@@ -36,6 +36,7 @@ class Product extends Model
         'qty',
         'image',
         'description',
+        'is_featured',
         'status',
     ];
 
@@ -44,6 +45,7 @@ class Product extends Model
         'brand_id'    => 'integer',
         'price'       => 'integer',
         'qty'         => 'integer',
+        'is_featured' => 'integer',
         'status'      => 'integer',
         'created_at'  => 'datetime',
         'updated_at'  => 'datetime',

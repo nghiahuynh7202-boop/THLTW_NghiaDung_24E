@@ -65,11 +65,16 @@ export default function FlashSale({ onAddToCart }) {
       </div>
 
       {loading ? (
-        <div className="py-12 flex items-center justify-center gap-2 text-gray-400 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-red-500" />
-          <span>Đang tải sản phẩm...</span>
+        <div className="flex items-stretch gap-3.5 sm:gap-4 overflow-hidden py-2 px-1 animate-pulse">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="w-[195px] sm:w-[225px] lg:w-[235px] flex-shrink-0 bg-white rounded-2xl border border-red-100 p-3 space-y-3">
+              <div className="w-full aspect-[4/4.8] bg-red-50/60 rounded-xl" />
+              <div className="h-4 bg-gray-100 rounded-md w-3/4" />
+              <div className="h-4 bg-red-100 rounded-md w-1/2" />
+            </div>
+          ))}
         </div>
-      ) : (
+      ) : products.length > 0 ? (
         <div className="relative">
           <button type="button" aria-label="Xem sản phẩm trước" onClick={() => scroll(-1)} className={`${arrowClass} -left-2 sm:-left-3`}>
             <ChevronLeft className="w-6 h-6 stroke-[2.5]" />
@@ -86,6 +91,10 @@ export default function FlashSale({ onAddToCart }) {
           <button type="button" aria-label="Xem sản phẩm tiếp" onClick={() => scroll(1)} className={`${arrowClass} -right-2 sm:-right-3`}>
             <ChevronRight className="w-6 h-6 stroke-[2.5]" />
           </button>
+        </div>
+      ) : (
+        <div className="py-8 text-center text-gray-400 text-xs">
+          Hiện chưa có sản phẩm Flash Sale nào.
         </div>
       )}
 

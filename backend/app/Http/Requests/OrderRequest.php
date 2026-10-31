@@ -19,7 +19,7 @@ class OrderRequest extends FormRequest
 
         if ($isCreate) {
             return [
-                'user_id'            => ['nullable', 'integer', 'exists:users,id'],
+                'user_id'            => ['nullable', 'integer'],
                 'name'               => ['required', 'string', 'max:255'],
                 'phone'              => ['required', 'string', 'max:20'],
                 'email'              => ['nullable', 'email', 'max:150'],

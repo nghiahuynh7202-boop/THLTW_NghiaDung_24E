@@ -11,6 +11,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
@@ -25,16 +26,17 @@ class AuthController extends Controller
         $data['role'] = 'customer';
         $data['status'] = 1;
 
-        $user = User::create($data);
-
-        // Tạo token đăng nhập Sanctum
-        $token = $user->createToken('auth_token')->plainTextToken;
+        $result = DB::transaction(function () use ($data) {
+            $user = User::create($data);
+            $token = $user->createToken('auth_token')->plainTextToken;
+            return ['user' => $user, 'token' => $token];
+        });
 
         return response()->json([
             'message'      => 'Đăng ký tài khoản thành công.',
-            'access_token' => $token,
+            'access_token' => $result['token'],
             'token_type'   => 'Bearer',
-            'user'         => new UserResource($user),
+            'user'         => new UserResource($result['user']),
         ], 201);
     }
 

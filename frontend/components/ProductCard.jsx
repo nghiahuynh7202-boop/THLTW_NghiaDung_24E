@@ -1,23 +1,26 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingCart, Eye } from "lucide-react";
 
+const resolveImgUrl = (rawImg) => {
+  const raw = rawImg ? String(rawImg).trim() : "";
+  if (!raw) return "/images/hoa.jpg";
+  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:") || raw.startsWith("/images/")) {
+    return raw;
+  }
+  const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
+  const cleanPath = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+  return `http://${hostname}:8000/storage/${cleanPath}`;
+};
+
 export default function ProductCard({ product, onAddToCart }) {
-  const [imgSrc, setImgSrc] = useState(() => {
-    const raw = product?.image ? String(product.image).trim() : "";
-    if (!raw) return "/images/hoa.jpg";
-    if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:")) {
-      return raw;
-    }
-    if (raw.startsWith("/images/")) {
-      return raw;
-    }
-    const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
-    const cleanPath = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
-    return `http://${hostname}:8000/storage/${cleanPath}`;
-  });
+  const [imgSrc, setImgSrc] = useState(() => resolveImgUrl(product?.image));
+
+  useEffect(() => {
+    setImgSrc(resolveImgUrl(product?.image));
+  }, [product?.image]);
 
   const formatPrice = (amount) => {
     return new Intl.NumberFormat("vi-VN").format(amount) + "đ";
@@ -25,10 +28,49 @@ export default function ProductCard({ product, onAddToCart }) {
 
   const productUrl = `/products/${product.slug || product.id}`;
 
+  // Chuẩn hóa giá: hỗ trợ cả raw API (price, sale_price) và formatted (price, originalPrice)
+  const rawPrice = Number(product?.price || 0);
+  const rawSalePrice =
+    product?.sale_price !== null && product?.sale_price !== undefined && product?.sale_price !== ""
+      ? Number(product.sale_price)
+      : null;
+
+  let currentPrice = rawPrice;
+  let originalPrice = null;
+
+  if (product?.originalPrice && Number(product.originalPrice) > rawPrice) {
+    // Trường hợp đã qua format: price là giá sau giảm, originalPrice là giá gốc
+    currentPrice = rawPrice;
+    originalPrice = Number(product.originalPrice);
+  } else if (rawSalePrice !== null && rawSalePrice > 0 && rawSalePrice < rawPrice) {
+    // Trường hợp raw từ API: price là giá gốc, sale_price là giá khuyến mãi
+    currentPrice = rawSalePrice;
+    originalPrice = rawPrice;
+  }
+
+  const hasSale = originalPrice !== null && originalPrice > currentPrice;
+  const discountPercent = hasSale
+    ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+    : 0;
+
   return (
     <div className="bg-white rounded-2xl shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden relative border border-gray-100 hover:-translate-y-1 p-2.5 sm:p-3">
       {/* 1. KHU VỰC HÌNH ẢNH */}
       <div className="relative w-full aspect-[4/4.8] bg-white rounded-xl flex items-center justify-center overflow-hidden">
+        {/* Badge Nổi bật nếu có */}
+        {(product.is_featured === 1 || product.is_featured === true || product.is_featured === "1") && (
+          <div className="absolute top-2 left-2 z-10 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-xs flex items-center gap-1">
+            ⭐ Nổi bật
+          </div>
+        )}
+
+        {/* Badge Giảm giá % nếu có */}
+        {hasSale && discountPercent > 0 && (
+          <div className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 to-orange-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">
+            -{discountPercent}%
+          </div>
+        )}
+
         {/* Link & Ảnh sản phẩm */}
         <Link
           href={productUrl}
@@ -53,7 +95,14 @@ export default function ProductCard({ product, onAddToCart }) {
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (onAddToCart) onAddToCart(product);
+              if (onAddToCart) {
+                onAddToCart({
+                  ...product,
+                  image: imgSrc || resolveImgUrl(product?.image),
+                  price: currentPrice,
+                  originalPrice: hasSale ? originalPrice : null,
+                });
+              }
             }}
             className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold hover:text-yellow-200 transition-colors cursor-pointer py-0.5"
             title="Thêm vào giỏ"
@@ -86,15 +135,15 @@ export default function ProductCard({ product, onAddToCart }) {
           {product.name}
         </Link>
 
-        {/* Hàng giá: Giá cũ gạch ngang (nếu có) + Giá mới cam đỏ nổi bật */}
-        <div className="flex items-baseline justify-center gap-2 flex-wrap">
-          {product.originalPrice && product.originalPrice > product.price ? (
+        {/* Hàng giá: Giá cũ gạch ngang (nếu có sale) + Giá mới cam đỏ nổi bật */}
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap">
+          {hasSale && (
             <span className="text-[11px] sm:text-xs text-gray-400 line-through font-normal">
-              {formatPrice(product.originalPrice)}
+              {formatPrice(originalPrice)}
             </span>
-          ) : null}
-          <span className="text-xs sm:text-[15px] font-bold text-[#ff3d00] tracking-tight">
-            {formatPrice(product.price)}
+          )}
+          <span className="text-xs sm:text-[15px] font-extrabold text-[#e50914] tracking-tight">
+            {formatPrice(currentPrice)}
           </span>
         </div>
       </div>

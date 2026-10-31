@@ -26,15 +26,24 @@ export default function ProductSection({ title, color, link, category, tags = []
       </div>
 
       {loading ? (
-        <div className="py-12 flex items-center justify-center gap-2 text-gray-400 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-[#f68b1f]" />
-          <span>Đang tải sản phẩm...</span>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 animate-pulse">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-3 space-y-3">
+              <div className="w-full aspect-[4/4.8] bg-gray-100 rounded-xl" />
+              <div className="h-4 bg-gray-100 rounded-md w-3/4" />
+              <div className="h-4 bg-gray-100 rounded-md w-1/2" />
+            </div>
+          ))}
         </div>
-      ) : (
+      ) : products.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
           {products.map((item) => (
             <ProductCard key={item.id} product={item} onAddToCart={onAddToCart} />
           ))}
+        </div>
+      ) : (
+        <div className="py-8 text-center text-gray-400 text-xs">
+          Chưa có sản phẩm nào trong danh mục này.
         </div>
       )}
 

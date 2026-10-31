@@ -82,9 +82,12 @@ class OrderController extends Controller
             $shippingFee    = (int) ($validated['shipping_fee'] ?? 0);
             $total          = max(0, $subtotal - $discountAmount + $shippingFee);
 
+            $rawUserId = $validated['user_id'] ?? $request->user()?->id;
+            $userId = (!empty($rawUserId) && \App\Models\User::where('id', $rawUserId)->exists()) ? (int) $rawUserId : null;
+
             // 3. Tạo thông tin đơn hàng
             $order = Order::create([
-                'user_id'         => $validated['user_id'] ?? $request->user()?->id,
+                'user_id'         => $userId,
                 'name'            => $validated['name'],
                 'phone'           => $validated['phone'],
                 'email'           => $validated['email'] ?? null,
@@ -111,12 +114,16 @@ class OrderController extends Controller
                 ProductSale::where('code', $validated['coupon_code'])->increment('used_count');
             }
 
-            // 6. Xoá các sản phẩm đã đặt khỏi giỏ hàng của người dùng (nếu có user_id)
-            if (! empty($order->user_id)) {
-                $orderedProductIds = array_column($items, 'product_id');
-                Cart::where('user_id', $order->user_id)
-                    ->whereIn('product_id', $orderedProductIds)
-                    ->delete();
+            // 6. Xoá các sản phẩm đã đặt khỏi giỏ hàng của người dùng (nếu có dùng bảng carts)
+            if (! empty($order->user_id) && \Illuminate\Support\Facades\Schema::hasTable('carts')) {
+                try {
+                    $orderedProductIds = array_column($items, 'product_id');
+                    Cart::where('user_id', $order->user_id)
+                        ->whereIn('product_id', $orderedProductIds)
+                        ->delete();
+                } catch (\Throwable $e) {
+                    // Bỏ qua nếu ứng dụng quản lý giỏ hàng phía frontend/localStorage
+                }
             }
 
             return $order;

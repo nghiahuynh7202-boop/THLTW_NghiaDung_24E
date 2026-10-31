@@ -1,8 +1,9 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { DollarSign, ShoppingBag, Package, Users, Eye, Edit, Trash2, CheckCircle, Clock, Truck, ArrowRight, Home, ChevronRight, } from "lucide-react";
+import { getProducts } from "@/services/productServices";
 export default function AdminDashboardPage() {
     const [activeTab, setActiveTab] = useState("orders");
     // Thống kê kinh doanh theo dạng Small Box AdminLTE
@@ -87,45 +88,17 @@ export default function AdminDashboardPage() {
             date: "04/10/2026 19:20",
         },
     ];
-    // Sản phẩm hoa nổi bật
-    const sampleProducts = [
-        {
-            id: 1,
-            name: "Bó hoa Thương",
-            category: "Hoa sinh nhật",
-            price: 350000,
-            stock: 45,
-            status: 1,
-            image: "https://images.unsplash.com/photo-1561181286-d3fee7d55364?w=200&auto=format&fit=crop&q=80",
-        },
-        {
-            id: 2,
-            name: "Bó hoa Victo rose",
-            category: "Hoa tình yêu",
-            price: 300000,
-            stock: 28,
-            status: 1,
-            image: "https://images.unsplash.com/photo-1526047932273-341f2a7631f9?w=200&auto=format&fit=crop&q=80",
-        },
-        {
-            id: 3,
-            name: "Giỏ hoa An nhiên 2",
-            category: "Hoa khai trương",
-            price: 650000,
-            stock: 12,
-            status: 1,
-            image: "https://images.unsplash.com/photo-1525310072745-f49212b5ac6d?w=200&auto=format&fit=crop&q=80",
-        },
-        {
-            id: 4,
-            name: "Bó hoa Pastel love",
-            category: "Hoa chúc mừng",
-            price: 400000,
-            stock: 30,
-            status: 1,
-            image: "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?w=200&auto=format&fit=crop&q=80",
-        },
-    ];
+    // Lấy sản phẩm thực tế từ SQL database
+    const [realProducts, setRealProducts] = useState([]);
+
+    useEffect(() => {
+        getProducts({ per_page: 8 })
+            .then((data) => {
+                if (Array.isArray(data)) setRealProducts(data);
+            })
+            .catch(() => {});
+    }, []);
+
     const formatPrice = (amount) => {
         return new Intl.NumberFormat("vi-VN").format(amount) + " đ";
     };
@@ -276,14 +249,14 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {sampleProducts.map((p) => (<tr key={p.id} className="hover:bg-blue-50/40 transition-colors">
+                {realProducts.map((p) => (<tr key={p.id} className="hover:bg-blue-50/40 transition-colors">
                     <td className="px-4 py-2 text-center border-r border-gray-200">
-                      <Image src={p.image} alt={p.name} width={36} height={36} unoptimized className="w-9 h-9 object-cover rounded-xs border border-gray-200 mx-auto"/>
+                      <Image src={p.image || "/images/hoa.jpg"} alt={p.name} width={36} height={36} unoptimized className="w-9 h-9 object-cover rounded-xs border border-gray-200 mx-auto"/>
                     </td>
                     <td className="px-4 py-2 font-bold text-gray-900 border-r border-gray-200">{p.name}</td>
-                    <td className="px-4 py-2 border-r border-gray-200">{p.category}</td>
+                    <td className="px-4 py-2 border-r border-gray-200">{p.category?.name || p.category || "Hoa tươi"}</td>
                     <td className="px-4 py-2 font-bold text-red-600 border-r border-gray-200">{formatPrice(p.price)}</td>
-                    <td className="px-4 py-2 border-r border-gray-200">{p.stock} bó</td>
+                    <td className="px-4 py-2 border-r border-gray-200">{p.qty ?? p.stock ?? 10} bó</td>
                     <td className="px-4 py-2 border-r border-gray-200">
                       <span className="px-2 py-0.5 rounded-xs text-[10px] font-bold bg-green-100 text-green-700 border border-green-200">
                         Đang bán
@@ -291,12 +264,9 @@ export default function AdminDashboardPage() {
                     </td>
                     <td className="px-4 py-2 text-center">
                       <div className="inline-flex items-center gap-1">
-                        <button type="button" className="p-1 bg-[#f39c12] text-white hover:bg-[#e08e0b] rounded-xs" title="Sửa">
+                        <Link href={`/admin/products/update?id=${p.id}`} className="p-1 bg-[#f39c12] text-white hover:bg-[#e08e0b] rounded-xs inline-block" title="Sửa">
                           <Edit className="w-3.5 h-3.5"/>
-                        </button>
-                        <button type="button" className="p-1 bg-[#dd4b39] text-white hover:bg-[#d73925] rounded-xs" title="Xóa tạm">
-                          <Trash2 className="w-3.5 h-3.5"/>
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   </tr>))}

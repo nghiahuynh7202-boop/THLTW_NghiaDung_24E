@@ -2,7 +2,18 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCategories, deleteCategory } from "@/services/categoryServices";
-import { RefreshCw, Trash2, Plus, Edit2, Folder, Layers } from "lucide-react";
+import { RefreshCw, Trash2, Plus, Edit2, Folder, Layers, Image as ImageIcon } from "lucide-react";
+
+const getImageUrl = (img) => {
+    if (!img) return "";
+    if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("blob:")) {
+        return img;
+    }
+    const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
+    const cleanPath = img.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+    return `http://${hostname}:8000/storage/${cleanPath}`;
+};
+
 function CategoryContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -109,6 +120,7 @@ function CategoryContent() {
               <thead>
                 <tr className="bg-gray-50/70 border-b border-gray-200 text-gray-600 font-semibold uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4 w-16 text-center">STT</th>
+                  <th className="py-3 px-4 w-16 text-center">Hình ảnh</th>
                   <th className="py-3 px-4">Tên danh mục</th>
                   <th className="py-3 px-4">Đường dẫn (Slug)</th>
                   <th className="py-3 px-4 text-center">Trạng thái</th>
@@ -117,7 +129,7 @@ function CategoryContent() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (<tr>
-                    <td colSpan={5} className="text-center py-12 text-gray-400">
+                    <td colSpan={6} className="text-center py-12 text-gray-400">
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-4 h-4 border-2 border-[#f68b1f] border-t-transparent rounded-full animate-spin"/>
                         <span>Đang tải danh mục...</span>
@@ -127,6 +139,25 @@ function CategoryContent() {
                       {/* STT */}
                       <td className="py-3.5 px-4 text-center text-gray-500 font-medium">
                         {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
+
+                      {/* Hình ảnh */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-white shrink-0 mx-auto flex items-center justify-center">
+                          {item.image ? (
+                            <img
+                              src={getImageUrl(item.image)}
+                              alt={item.name || "Danh mục"}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = "/images/hoa.jpg";
+                              }}
+                            />
+                          ) : (
+                            <ImageIcon className="w-4 h-4 text-gray-300" />
+                          )}
+                        </div>
                       </td>
 
                       {/* Tên */}
@@ -166,7 +197,7 @@ function CategoryContent() {
                         </div>
                       </td>
                     </tr>))) : (<tr>
-                    <td colSpan={5} className="text-center py-10 text-gray-400">
+                    <td colSpan={6} className="text-center py-10 text-gray-400">
                       <Folder className="w-10 h-10 mx-auto text-gray-300 mb-2"/>
                       <p className="text-xs font-medium text-gray-500">Chưa có danh mục nào</p>
                     </td>

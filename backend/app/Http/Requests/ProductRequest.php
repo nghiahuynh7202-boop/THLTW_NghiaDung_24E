@@ -40,6 +40,7 @@ class ProductRequest extends FormRequest
             'qty'         => ['nullable', 'integer', 'min:0'],
             'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'description' => ['nullable', 'string'],
+            'is_featured' => ['nullable', 'integer', 'in:0,1'],
             'status'      => ['nullable', 'integer', 'in:0,1'],
         ];
     }

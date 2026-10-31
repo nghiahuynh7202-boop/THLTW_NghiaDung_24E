@@ -75,6 +75,11 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{id}', [OrderController::class, 'show']);
 Route::patch('/orders/{id}/cancel', [OrderController::class, 'cancel']);
 
+// SePay Tự Động & Kiểm tra thanh toán ngân hàng
+Route::post('/sepay/webhook', [\App\Http\Controllers\Api\SepayController::class, 'webhook']);
+Route::post('/sepay/mock-payment/{id}', [\App\Http\Controllers\Api\SepayController::class, 'mockPayment']);
+Route::get('/orders/{id}/check-payment', [\App\Http\Controllers\Api\SepayController::class, 'checkPayment']);
+
 // Khuyến mãi & Kiểm tra mã giảm giá (Product Sales & Coupons - Client)
 Route::get('/productsales', [ProductSaleController::class, 'index']);
 Route::get('/productsales/{id}', [ProductSaleController::class, 'show']);
@@ -100,6 +105,7 @@ Route::prefix('admin')->group(function () {
     Route::get('categories/trash', [CategoryController::class, 'trash']);
     Route::patch('categories/{id}/restore', [CategoryController::class, 'restore']);
     Route::delete('categories/{id}/force', [CategoryController::class, 'forceDelete']);
+    Route::post('categories/{id}', [CategoryController::class, 'update']);
     Route::apiResource('categories', CategoryController::class);
 
     // 4. Banners

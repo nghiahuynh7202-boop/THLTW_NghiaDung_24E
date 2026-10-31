@@ -39,14 +39,9 @@ const SECTIONS = [
   {
     title: "SAN PHAM NOI BAT",
     color: "bg-[#e91e63]",
-    link: "/category/hoa-tinh-yeu",
-    category: "hoa-tinh-yeu",
-    tags: [
-      { label: "Hồng đỏ 99 bông", value: "hong-do-99" },
-      { label: "Hồng kem", value: "hong-kem" },
-      { label: "Hộp trái tim", value: "hop-trai-tim" },
-      { label: "Ecuador", value: "ecuador" },
-    ],
+    link: "/products",
+    category: "san-pham-noi-bat",
+    tags: [],
   },
 ];
 

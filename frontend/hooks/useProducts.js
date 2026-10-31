@@ -3,20 +3,6 @@
 import { useState, useEffect } from "react";
 import { getProducts } from "@/services/productServices";
 
-// Dữ liệu mẫu đẹp mắt khi database chưa có đủ sản phẩm
-const SAMPLE_PRODUCTS = [
-  { id: "s1", name: "Bó Hoa Nắng Ban Mai", slug: "nang-ban-mai", price: 350000, originalPrice: 420000, image: "/images/hoa.jpg" },
-  { id: "s2", name: "Victo Rose Tươi Tắn", slug: "victo-rose", price: 300000, originalPrice: 380000, image: "/images/hoa.jpg" },
-  { id: "s3", name: "My Sun Rực Rỡ", slug: "my-sun", price: 150000, originalPrice: 220000, image: "/images/hoa.jpg" },
-  { id: "s4", name: "Yêu Thương Đong Đầy", slug: "yeu-thuong", price: 350000, originalPrice: 420000, image: "/images/hoa.jpg" },
-  { id: "s5", name: "Mini Flower Vase 06", slug: "mini-flower-vase-06", price: 350000, originalPrice: 400000, image: "/images/hoa.jpg" },
-  { id: "s6", name: "Ngọt Ngào Tuổi Mới", slug: "ngot-ngao", price: 350000, originalPrice: 420000, image: "/images/hoa.jpg" },
-  { id: "s7", name: "An Nhiên Thanh Lịch", slug: "an-nhien", price: 650000, originalPrice: 790000, image: "/images/hoa.jpg" },
-  { id: "s8", name: "Xinh Tươi Rạng Ngời", slug: "xinh-tuoi", price: 300000, originalPrice: 380000, image: "/images/hoa.jpg" },
-  { id: "s9", name: "Pastel Love", slug: "pastel-love", price: 400000, originalPrice: 490000, image: "/images/hoa.jpg" },
-  { id: "s10", name: "Thơ Mộng Sắc Hoa", slug: "tho-mong", price: 350000, originalPrice: 420000, image: "/images/hoa.jpg" },
-];
-
 function formatProduct(p) {
   const hasSale = p.sale_price && Number(p.sale_price) < Number(p.price);
   return {
@@ -28,6 +14,7 @@ function formatProduct(p) {
     image: p.image || "/images/hoa.jpg",
     category_slug: p.category?.slug,
     category_id: p.category_id,
+    is_featured: Number(p.is_featured ?? 0) === 1,
   };
 }
 
@@ -41,30 +28,60 @@ export function useProducts({ category, tag } = {}) {
     async function load() {
       try {
         setLoading(true);
-        const res = await getProducts({ per_page: 40 });
-        const list = Array.isArray(res) ? res : res?.data || [];
-        const formatted = list.length > 0 ? list.map(formatProduct) : SAMPLE_PRODUCTS;
+        // Gọi API lấy toàn bộ sản phẩm thực tế từ cơ sở dữ liệu SQL
+        const res = await getProducts({ per_page: 50 });
+        const list = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data?.data)
+          ? res.data.data
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
 
         if (!isMounted) return;
 
+        const formatted = list.map(formatProduct);
+
         let filtered = formatted;
 
-        // Phân loại theo khung
-        if (category === "flash-sale") {
-          const saleOnly = formatted.filter((p) => p.originalPrice);
-          filtered = saleOnly.length >= 4 ? saleOnly.slice(0, 10) : formatted.slice(0, 10);
+        // Phân bổ sản phẩm thực tế từ SQL vào từng khu vực hiển thị
+        if (
+          category === "featured" ||
+          category === "san-pham-noi-bat" ||
+          category === "hoa-tinh-yeu"
+        ) {
+          const featured = formatted.filter((p) => p.is_featured);
+          filtered = featured;
+        } else if (category === "flash-sale") {
+          // CHỈ RIÊNG KHU VỰC FLASH SALE: Áp dụng giá Flash Sale đặc biệt có gạch chéo giá gốc
+          const discounts = [0.15, 0.25, 0.20, 0.18, 0.22, 0.28, 0.16, 0.24];
+          filtered = formatted.slice(0, 8).map((p, idx) => {
+            if (p.originalPrice && p.originalPrice > p.price) return p;
+            const rate = discounts[idx % discounts.length];
+            const flashPrice = Math.round((p.price * (1 - rate)) / 10000) * 10000;
+            return {
+              ...p,
+              originalPrice: p.price,
+              price: flashPrice < p.price ? flashPrice : p.price - 20000,
+            };
+          });
         } else if (category === "hoa-sinh-nhat") {
-          filtered = formatted.slice(0, 10);
+          const match = formatted.filter((p) => p.category_slug === "hoa-sinh-nhat");
+          filtered = match.length > 0 ? match : formatted.slice(0, 5);
         } else if (category === "hoa-khai-truong") {
-          filtered = formatted.slice(4, 14).length >= 4 ? formatted.slice(4, 14) : formatted.slice(0, 10);
-        } else if (category === "hoa-tinh-yeu") {
-          filtered = formatted.slice(8, 18).length >= 4 ? formatted.slice(8, 18) : formatted.slice(0, 10);
+          const match = formatted.filter((p) => p.category_slug === "hoa-khai-truong");
+          filtered = match.length > 0 ? match : formatted.slice(3, 8);
+        } else if (category) {
+          const match = formatted.filter(
+            (p) => p.category_slug === category || String(p.category_id) === String(category)
+          );
+          filtered = match.length > 0 ? match : formatted;
         }
 
         setProducts(filtered);
       } catch (error) {
-        console.error("Lỗi useProducts:", error);
-        if (isMounted) setProducts(SAMPLE_PRODUCTS);
+        console.error("Lỗi tải sản phẩm từ SQL:", error);
+        if (isMounted) setProducts([]);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -81,3 +98,4 @@ export function useProducts({ category, tag } = {}) {
 }
 
 export default useProducts;
+

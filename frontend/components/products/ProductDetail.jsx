@@ -22,6 +22,7 @@ import {
 import { useCart } from "@/context/CartContext";
 import Toast from "@/components/home/Toast";
 import { useToast } from "@/hooks/useToast";
+import RelatedProducts from "./RelatedProducts";
 
 function formatPrice(amount) {
   return new Intl.NumberFormat("vi-VN").format(Number(amount) || 0) + "đ";
@@ -80,6 +81,11 @@ export default function ProductDetail({ product }) {
     };
     addToCart(itemToAdd, quantity);
     toast.show(`Đã thêm ${quantity} x "${name}" vào giỏ hàng!`);
+  };
+
+  const handleAddRelatedToCart = (item) => {
+    addToCart(item, 1);
+    toast.show(`Đã thêm "${item.name}" vào giỏ hàng!`);
   };
 
   const handleBuyNow = () => {
@@ -339,6 +345,13 @@ export default function ProductDetail({ product }) {
           </div>
         )}
       </div>
+
+      {/* Sản phẩm liên quan */}
+      <RelatedProducts
+        currentProductId={product?.id}
+        categoryId={categoryId}
+        onAddToCart={handleAddRelatedToCart}
+      />
     </div>
   );
 }
