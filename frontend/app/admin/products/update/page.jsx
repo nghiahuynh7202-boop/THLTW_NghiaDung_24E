@@ -252,6 +252,7 @@ function EditProductContent() {
                                     </div>)}
                             </div>
 
+                            {/* CHỨC NĂNG SẢN PHẨM NỔI BẬT: Admin cập nhật bật/tắt `is_featured` */}
                             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
                                 <label className="inline-flex items-center gap-3 text-[15px] font-semibold text-gray-700 cursor-pointer">
                                     <input type="checkbox" name="is_featured" checked={form.is_featured === "1"} onChange={handleChange} className="h-5 w-5 rounded accent-blue-600 cursor-pointer"/>

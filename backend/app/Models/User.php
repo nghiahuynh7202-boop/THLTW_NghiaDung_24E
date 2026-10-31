@@ -2,32 +2,22 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/**
+ * File này làm gì: Model ánh xạ bảng `users` trong cơ sở dữ liệu.
+ * Quản lý thông tin tài khoản, phân quyền (role: 'admin' | 'customer') và cấp token qua Sanctum.
+ */
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'users';
-
-    public static function bootSoftDeletes(): void
-    {
-        try {
-            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'deleted_at')) {
-                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
-            }
-        } catch (\Throwable $e) {
-            // Ignore schema error if table not ready
-        }
-    }
 
     protected $fillable = [
         'name',
@@ -49,31 +39,28 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'status'            => 'integer',
-            'created_at'        => 'datetime',
-            'updated_at'        => 'datetime',
         ];
     }
 
-    public function contacts(): HasMany
-    {
-        return $this->hasMany(Contact::class);
-    }
-
-    public function posts(): HasMany
-    {
-        return $this->hasMany(Post::class);
-    }
-
-    public function stockDocuments(): HasMany
-    {
-        return $this->hasMany(StockDocument::class, 'created_by');
-    }
-
+    // Quan hệ: Một người dùng có nhiều đơn hàng
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class, 'user_id');
     }
 
+    // Quan hệ: Một người dùng có thể gửi nhiều liên hệ
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(Contact::class);
+    }
+
+    // Quan hệ: Một người dùng có thể viết nhiều bài viết (tin tức)
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    // Scope lọc tài khoản đang hoạt động (status = 1)
     public function scopeActive(Builder $query): void
     {
         $query->where('status', 1);

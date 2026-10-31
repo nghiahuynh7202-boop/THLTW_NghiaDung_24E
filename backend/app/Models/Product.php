@@ -16,17 +16,6 @@ class Product extends Model
 
     protected $table = 'products';
 
-    public static function bootSoftDeletes(): void
-    {
-        try {
-            if (\Illuminate\Support\Facades\Schema::hasColumn('products', 'deleted_at')) {
-                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
-            }
-        } catch (\Throwable $e) {
-            // Ignore
-        }
-    }
-
     protected $fillable = [
         'category_id',
         'brand_id',
@@ -40,59 +29,41 @@ class Product extends Model
         'status',
     ];
 
-    protected $casts = [
-        'category_id' => 'integer',
-        'brand_id'    => 'integer',
-        'price'       => 'integer',
-        'qty'         => 'integer',
-        'is_featured' => 'integer',
-        'status'      => 'integer',
-        'created_at'  => 'datetime',
-        'updated_at'  => 'datetime',
-        'deleted_at'  => 'datetime',
-    ];
-
+    // Thuộc về một danh mục
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
 
+    // Thuộc về một thương hiệu
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class, 'brand_id');
     }
 
+    // Danh sách khuyến mãi của sản phẩm
     public function sales(): HasMany
     {
         return $this->hasMany(ProductSale::class, 'product_id');
     }
 
-    public function carts(): HasMany
-    {
-        return $this->hasMany(Cart::class, 'product_id');
-    }
-
+    // Chỉ lấy sản phẩm đang bật (status = 1)
     public function scopeActive(Builder $query): void
     {
         $query->where('status', 1);
     }
 
+    // Tạo slug không trùng lặp
     public static function uniqueSlug(string $name, ?int $ignoreId = null): string
     {
         $slug = Str::slug($name);
         $originalSlug = $slug;
         $count = 1;
 
-        while (true) {
-            $query = static::withTrashed()->where('slug', $slug);
-            if ($ignoreId !== null) {
-                $query->where('id', '!=', $ignoreId);
-            }
-            if (! $query->exists()) {
-                return $slug;
-            }
+        while (static::where('slug', $slug)->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))->exists()) {
             $slug = "{$originalSlug}-{$count}";
             $count++;
         }
+        return $slug;
     }
 }

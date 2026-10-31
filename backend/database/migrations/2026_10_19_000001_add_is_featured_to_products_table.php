@@ -8,6 +8,8 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * CHỨC NĂNG SẢN PHẨM NỔI BẬT: Thêm cột `is_featured` vào bảng `products`
+     * Giá trị: 0 (sản phẩm thường), 1 (sản phẩm nổi bật được ưu tiên hiển thị ở trang chủ).
      */
     public function up(): void
     {

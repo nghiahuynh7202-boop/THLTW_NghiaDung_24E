@@ -6,36 +6,38 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ProductRequest;
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Models\ProductSale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
+    // Lấy danh sách sản phẩm phân trang
+    public function index(Request $request)
+    {
+        $query = Product::with(['category', 'brand', 'sales'])->latest('id');
 
-public function index(Request $request)
-{
-    $query = Product::with(['category', 'brand', 'sales'])->latest('id');
+        // Khách chỉ xem sản phẩm đang bật
+        if (! $request->is('api/admin/*')) {
+            $query->active();
+        }
 
-    
-    if (! $request->is('api/admin/*')) {
-        $query->active();
+        // Lọc theo danh mục
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        // Lọc sản phẩm nổi bật
+        if ($request->filled('is_featured')) {
+            $query->where('is_featured', (int) $request->input('is_featured'));
+        }
+
+        $perPage = (int) $request->input('per_page', 12);
+        return ProductResource::collection($query->paginate($perPage));
     }
 
-    // Lọc theo category_id và loại trừ sản phẩm hiện tại (dùng cho sản phẩm liên quan)
-    if ($request->filled('category_id')) {
-        $query->where('category_id', $request->input('category_id'));
-    }
-    if ($request->filled('exclude_id')) {
-        $query->where('id', '!=', $request->input('exclude_id'));
-    }
-
-    $perPage = (int) $request->input('per_page', 12);
-    $products = $query->paginate($perPage);
-
-    return ProductResource::collection($products);
-}
-
+    // Thêm sản phẩm mới
     public function store(ProductRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -50,12 +52,12 @@ public function index(Request $request)
 
         $product = Product::create($data);
 
-        // Lưu thông tin khuyến mãi vào bảng productsale nếu có nhập sale_price
-        if ($salePrice !== null && (float)$salePrice > 0) {
-            \App\Models\ProductSale::create([
+        // Lưu giá khuyến mãi nếu có nhập
+        if ($salePrice !== null && (float) $salePrice > 0) {
+            ProductSale::create([
                 'name'       => 'Khuyến mãi ' . $product->name,
                 'product_id' => $product->id,
-                'pricesale'  => (int)$salePrice,
+                'pricesale'  => (int) $salePrice,
                 'apply_to'   => 'product',
                 'date_begin' => now(),
                 'date_end'   => now()->addYears(1),
@@ -69,9 +71,7 @@ public function index(Request $request)
             ->setStatusCode(201);
     }
 
-    /**
-     * GET /api/admin/products/{product} hoặc GET /api/products/{product} — Chi tiết sản phẩm
-     */
+    // Xem chi tiết một sản phẩm theo ID hoặc Slug
     public function show($id): ProductResource
     {
         $product = Product::with(['category', 'brand', 'sales'])
@@ -82,26 +82,22 @@ public function index(Request $request)
         return new ProductResource($product);
     }
 
-    /**
-     * PUT|PATCH /api/admin/products/{product} — Cập nhật sản phẩm
-     */
+    // Cập nhật sản phẩm
     public function update(ProductRequest $request, Product $product): JsonResponse
     {
         $data = $request->validated();
 
-        // Không gửi slug thì giữ nguyên slug cũ, gửi slug rỗng thì tạo lại từ tên
         if (array_key_exists('slug', $data) && empty($data['slug'])) {
             $data['slug'] = Product::uniqueSlug($data['name'] ?? $product->name, $product->id);
         }
 
         if ($request->hasFile('image')) {
-            // Xóa ảnh cũ để không rác storage
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
             $data['image'] = $request->file('image')->store('products', 'public');
         } else {
-            unset($data['image']); // Không gửi ảnh mới thì giữ nguyên ảnh cũ
+            unset($data['image']);
         }
 
         $salePrice = $data['sale_price'] ?? null;
@@ -109,13 +105,13 @@ public function index(Request $request)
 
         $product->update($data);
 
-        // Cập nhật hoặc tạo mới bản ghi khuyến mãi
-        if ($salePrice !== null && (float)$salePrice > 0) {
-            \App\Models\ProductSale::updateOrCreate(
+        // Cập nhật giá khuyến mãi
+        if ($salePrice !== null && (float) $salePrice > 0) {
+            ProductSale::updateOrCreate(
                 ['product_id' => $product->id, 'apply_to' => 'product'],
                 [
                     'name'       => 'Khuyến mãi ' . $product->name,
-                    'pricesale'  => (int)$salePrice,
+                    'pricesale'  => (int) $salePrice,
                     'date_begin' => now(),
                     'date_end'   => now()->addYears(1),
                     'status'     => 1,
@@ -128,36 +124,30 @@ public function index(Request $request)
             ->response();
     }
 
-    /**
-     * DELETE /api/admin/products/{product} — Xóa tạm sản phẩm (vào thùng rác)
-     */
-public function destroy(Product $product): JsonResponse
-{
-    $product->update(['status' => 0]);   
-    $product->delete();               
+    // Xóa tạm vào thùng rác
+    public function destroy(Product $product): JsonResponse
+    {
+        $product->update(['status' => 0]);
+        $product->delete();
 
-    return response()->json([
-        'message' => 'Xóa tạm sản phẩm thành công (đã chuyển vào thùng rác).',
-    ]);
-}
+        return response()->json([
+            'message' => 'Xóa tạm sản phẩm thành công.',
+        ]);
+    }
 
-    /**
-     * GET /api/admin/products/trash — Danh sách sản phẩm trong thùng rác
-     */
-public function trash(Request $request)
-{
-    $perPage = (int) $request->input('per_page', 12);
-    $products = Product::onlyTrashed()
-        ->with(['category', 'brand', 'sales'])
-        ->latest('deleted_at')
-        ->paginate($perPage);
+    // Danh sách thùng rác
+    public function trash(Request $request)
+    {
+        $perPage = (int) $request->input('per_page', 12);
+        $products = Product::onlyTrashed()
+            ->with(['category', 'brand', 'sales'])
+            ->latest('deleted_at')
+            ->paginate($perPage);
 
-    return ProductResource::collection($products);
-}
+        return ProductResource::collection($products);
+    }
 
-    /**
-     * PATCH /api/admin/products/{id}/restore — Khôi phục sản phẩm từ thùng rác
-     */
+    // Khôi phục từ thùng rác
     public function restore(int|string $id): JsonResponse
     {
         $product = Product::onlyTrashed()->findOrFail($id);
@@ -169,22 +159,11 @@ public function trash(Request $request)
             ->response();
     }
 
-    /**
-     * DELETE /api/admin/products/{id}/force — Xóa vĩnh viễn sản phẩm
-     */
+    // Xóa vĩnh viễn khỏi database
     public function forceDelete(int|string $id): JsonResponse
     {
         $product = Product::withTrashed()->findOrFail($id);
 
-        try {
-            // Xóa dữ liệu liên quan ở bảng productsale và cart để tránh lỗi khóa ngoại
-            \App\Models\ProductSale::where('product_id', $product->id)->delete();
-            \App\Models\Cart::where('product_id', $product->id)->delete();
-        } catch (\Throwable $e) {
-            // Bỏ qua nếu bảng không tồn tại hoặc không có quan hệ
-        }
-
-        // Xóa file ảnh khỏi storage khi xóa vĩnh viễn
         if ($product->image) {
             Storage::disk('public')->delete($product->image);
         }

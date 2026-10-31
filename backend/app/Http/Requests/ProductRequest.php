@@ -40,6 +40,7 @@ class ProductRequest extends FormRequest
             'qty'         => ['nullable', 'integer', 'min:0'],
             'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
             'description' => ['nullable', 'string'],
+            // CHỨC NĂNG SẢN PHẨM NỔI BẬT: Xác thực cờ nổi bật chỉ nhận 0 (thường) hoặc 1 (nổi bật)
             'is_featured' => ['nullable', 'integer', 'in:0,1'],
             'status'      => ['nullable', 'integer', 'in:0,1'],
         ];

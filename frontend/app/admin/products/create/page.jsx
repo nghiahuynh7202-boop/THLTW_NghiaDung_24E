@@ -243,6 +243,7 @@ export default function CreateProductPage() {
                                 {preview && (<img src={preview} alt="Xem trước" className="mt-4 w-32 h-32 object-cover rounded-xl border shadow-sm"/>)}
                             </div>
 
+                            {/* CHỨC NĂNG SẢN PHẨM NỔI BẬT: Admin tick chọn để đánh dấu `is_featured = 1` */}
                             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
                                 <label className="inline-flex items-center gap-3 text-[15px] font-semibold text-gray-700 cursor-pointer">
                                     <input type="checkbox" name="is_featured" checked={form.is_featured === "1"} onChange={handleChange} className="h-5 w-5 rounded accent-blue-600 cursor-pointer"/>

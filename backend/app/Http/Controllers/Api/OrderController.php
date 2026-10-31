@@ -17,24 +17,22 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    /**
-     * GET /api/orders (Client) hoặc GET /api/admin/orders (Admin)
-     */
+    // Lấy danh sách đơn hàng
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Order::with(['details.product', 'user'])->latest('id');
 
-        // Lọc theo user_id nếu có
+        // Khách chỉ xem đơn của mình
         if ($userId = $request->input('user_id', $request->is('api/admin/*') ? null : $request->user()?->id)) {
             $query->where('user_id', $userId);
         }
 
-        // Lọc theo trạng thái đơn hàng (Admin hoặc Client)
+        // Lọc theo trạng thái
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
         }
 
-        // Tìm kiếm theo tên / số điện thoại người nhận
+        // Tìm kiếm theo tên hoặc số điện thoại
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -44,14 +42,10 @@ class OrderController extends Controller
         }
 
         $perPage = (int) $request->input('per_page', 12);
-        $orders = $query->paginate($perPage);
-
-        return OrderResource::collection($orders);
+        return OrderResource::collection($query->paginate($perPage));
     }
 
-    /**
-     * POST /api/orders hoặc POST /api/admin/orders — Tạo đơn hàng kèm chi tiết (order + orderdetail)
-     */
+    // Tạo đơn hàng mới trong Transaction
     public function store(OrderRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -61,10 +55,10 @@ class OrderController extends Controller
             $subtotal = 0;
             $detailRecords = [];
 
-            // 1. Duyệt qua từng sản phẩm và tính toán giá
+            // 1. Tính tiền từng sản phẩm từ database
             foreach ($items as $item) {
                 $product = Product::findOrFail($item['product_id']);
-                $unitPrice = isset($item['price']) && $item['price'] !== null ? (int) $item['price'] : (int) $product->price;
+                $unitPrice = (int) ($item['price'] ?? $product->price);
                 $qty = (int) $item['qty'];
                 $amount = $unitPrice * $qty;
                 $subtotal += $amount;
@@ -77,17 +71,14 @@ class OrderController extends Controller
                 ];
             }
 
-            // 2. Tính toán tổng tiền
+            // 2. Tính tổng tiền sau giảm giá và phí ship
             $discountAmount = (int) ($validated['discount_amount'] ?? 0);
             $shippingFee    = (int) ($validated['shipping_fee'] ?? 0);
             $total          = max(0, $subtotal - $discountAmount + $shippingFee);
 
-            $rawUserId = $validated['user_id'] ?? $request->user()?->id;
-            $userId = (!empty($rawUserId) && \App\Models\User::where('id', $rawUserId)->exists()) ? (int) $rawUserId : null;
-
-            // 3. Tạo thông tin đơn hàng
+            // 3. Tạo đơn hàng
             $order = Order::create([
-                'user_id'         => $userId,
+                'user_id'         => $validated['user_id'] ?? $request->user()?->id,
                 'name'            => $validated['name'],
                 'phone'           => $validated['phone'],
                 'email'           => $validated['email'] ?? null,
@@ -100,30 +91,23 @@ class OrderController extends Controller
                 'shipping_fee'    => $shippingFee,
                 'total'           => $total,
                 'status'          => 1, // 1: Chờ xác nhận
-                'cancel_reason'   => null,
             ]);
 
-            // 4. Tạo chi tiết đơn hàng (orderdetail)
+            // 4. Tạo chi tiết đơn hàng
             foreach ($detailRecords as $detail) {
                 $detail['order_id'] = $order->id;
                 OrderDetail::create($detail);
             }
 
-            // 5. Cập nhật lượt sử dụng mã khuyến mãi nếu có
+            // 5. Tăng số lần sử dụng mã giảm giá nếu có
             if (! empty($validated['coupon_code'])) {
                 ProductSale::where('code', $validated['coupon_code'])->increment('used_count');
             }
 
-            // 6. Xoá các sản phẩm đã đặt khỏi giỏ hàng của người dùng (nếu có dùng bảng carts)
-            if (! empty($order->user_id) && \Illuminate\Support\Facades\Schema::hasTable('carts')) {
-                try {
-                    $orderedProductIds = array_column($items, 'product_id');
-                    Cart::where('user_id', $order->user_id)
-                        ->whereIn('product_id', $orderedProductIds)
-                        ->delete();
-                } catch (\Throwable $e) {
-                    // Bỏ qua nếu ứng dụng quản lý giỏ hàng phía frontend/localStorage
-                }
+            // 6. Xóa giỏ hàng database nếu người dùng đã đăng nhập
+            if (! empty($order->user_id)) {
+                $orderedProductIds = array_column($items, 'product_id');
+                Cart::where('user_id', $order->user_id)->whereIn('product_id', $orderedProductIds)->delete();
             }
 
             return $order;
@@ -135,47 +119,30 @@ class OrderController extends Controller
             ->setStatusCode(201);
     }
 
-    /**
-     * GET /api/orders/{order} hoặc GET /api/admin/orders/{order}
-     */
+    // Chi tiết 1 đơn hàng
     public function show($id): OrderResource
     {
         $order = Order::with(['details.product', 'user'])->findOrFail($id);
-
         return new OrderResource($order);
     }
 
-    /**
-     * PUT|PATCH /api/admin/orders/{order} — Cập nhật trạng thái / thông tin đơn hàng
-     */
+    // Cập nhật trạng thái đơn hàng (Admin)
     public function update(OrderRequest $request, Order $order): JsonResponse
     {
-        $data = $request->validated();
-        $order->update($data);
+        $order->update($request->validated());
 
         return (new OrderResource($order->load(['details.product', 'user'])))
             ->additional(['message' => 'Cập nhật đơn hàng thành công.'])
             ->response();
     }
 
-    /**
-     * PATCH /api/orders/{order}/cancel — Khách hàng hoặc Admin hủy đơn
-     */
+    // Hủy đơn hàng (Khách hoặc Admin)
     public function cancel(Request $request, $id): JsonResponse
     {
-        $request->validate([
-            'cancel_reason' => 'nullable|string|max:255',
-        ], [
-            'cancel_reason.max' => 'Lý do hủy đơn không vượt quá 255 ký tự.',
-        ]);
-
         $order = Order::findOrFail($id);
 
-        // Chỉ cho phép hủy khi đơn ở trạng thái 1 (Chờ xác nhận) hoặc 2 (Đang xử lý)
         if ($order->status >= 3 && $order->status != 5) {
-            return response()->json([
-                'message' => 'Đơn hàng đang giao hoặc đã hoàn thành, không thể hủy.',
-            ], 422);
+            return response()->json(['message' => 'Đơn hàng đang giao hoặc đã hoàn thành, không thể hủy.'], 422);
         }
 
         $order->update([
@@ -188,9 +155,7 @@ class OrderController extends Controller
             ->response();
     }
 
-    /**
-     * DELETE /api/admin/orders/{order} — Xóa đơn hàng
-     */
+    // Xóa đơn hàng (Admin)
     public function destroy(Order $order): JsonResponse
     {
         DB::transaction(function () use ($order) {
@@ -198,8 +163,6 @@ class OrderController extends Controller
             $order->delete();
         });
 
-        return response()->json([
-            'message' => 'Xóa đơn hàng thành công.',
-        ]);
+        return response()->json(['message' => 'Xóa đơn hàng thành công.']);
     }
 }

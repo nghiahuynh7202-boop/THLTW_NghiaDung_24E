@@ -12,11 +12,13 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * File này làm gì: Quản lý Danh mục sản phẩm (Category) theo cấu trúc cây cha - con.
+ * Phục vụ menu danh mục ở trang chủ và toàn bộ tác vụ CRUD danh mục trong trang quản trị.
+ */
 class CategoryController extends Controller
 {
-    /**
-     * GET /api/categories hoặc GET /api/admin/categories — Danh sách danh mục
-     */
+    // Lấy danh sách danh mục: khách chỉ nhận danh mục gốc đang hiển thị, admin lấy toàn bộ cây danh mục
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Category::with('children')->latest('id');

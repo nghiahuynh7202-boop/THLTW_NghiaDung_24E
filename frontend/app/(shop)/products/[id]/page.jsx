@@ -7,6 +7,10 @@ import ProductDetail from "@/components/products/ProductDetail";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+/**
+ * File này làm gì: Trang Chi Tiết Sản Phẩm (Product Detail).
+ * Lấy slug hoặc id từ URL, gọi API lấy thông tin chi tiết hoa và hiển thị qua component `ProductDetail`.
+ */
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params?.slug || params?.id;
@@ -19,21 +23,13 @@ export default function ProductDetailPage() {
       try {
         setLoading(true);
         setError(null);
-        console.log("Fetching product with slug:", slug);
-        
         const res = await getProductBySlug(slug);
-        console.log("Full Response:", res);
-        
-        // Extract product from response
         const productData = res?.data || res;
-        console.log("Product Data:", productData);
         
         if (productData && Object.keys(productData).length > 0) {
           setProduct(productData);
-          console.log("Product loaded successfully");
         } else {
           setError("Không tìm thấy sản phẩm");
-          console.error(" Product data is empty");
         }
       } catch (err) {
         console.error(" Lỗi:", err);

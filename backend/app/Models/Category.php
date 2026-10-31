@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * File này làm gì: Model ánh xạ bảng `categories` trong database.
+ * Quản lý danh mục hoa theo cấu trúc phân cấp cha - con (`parent_id`) và cờ nổi bật (`is_featured`).
+ */
 class Category extends Model
 {
     use HasFactory;

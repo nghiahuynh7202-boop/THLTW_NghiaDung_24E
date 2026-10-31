@@ -10,45 +10,49 @@ const AuthContext = createContext({
   logout: () => {},
 });
 
+/**
+ * File này làm gì: Quản lý trạng thái đăng nhập (Auth State) cho toàn bộ ứng dụng.
+ * Lưu `user` và `token` vào `localStorage` để giữ phiên đăng nhập khi F5 hoặc chuyển trang.
+ */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Khi tải trang: nạp token và user từ localStorage nếu đã đăng nhập trước đó
   useEffect(() => {
     try {
-      const savedToken = localStorage.getItem("token") || localStorage.getItem("access_token");
+      const savedToken = localStorage.getItem("token") || localStorage.getItem("accessToken");
       const savedUser = localStorage.getItem("user");
       if (savedToken) setToken(savedToken);
       if (savedUser) setUser(JSON.parse(savedUser));
-    } catch (e) {
-      console.error("Lỗi đọc Auth từ localStorage:", e);
+    } catch {
+      // Bỏ qua nếu dữ liệu lưu bị lỗi
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Hàm đăng nhập: lưu thông tin vào state và localStorage
   const login = (userData, tokenData) => {
     setUser(userData);
     setToken(tokenData);
-    try {
-      if (tokenData) localStorage.setItem("token", tokenData);
-      if (userData) localStorage.setItem("user", JSON.stringify(userData));
-    } catch (e) {
-      console.error("Lỗi lưu Auth vào localStorage:", e);
+    if (tokenData) {
+      localStorage.setItem("token", tokenData);
+      localStorage.setItem("accessToken", tokenData);
+    }
+    if (userData) {
+      localStorage.setItem("user", JSON.stringify(userData));
     }
   };
 
+  // Hàm đăng xuất: làm rỗng state và xóa khỏi localStorage
   const logout = () => {
     setUser(null);
     setToken(null);
-    try {
-      localStorage.removeItem("token");
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("user");
-    } catch (e) {
-      console.error("Lỗi xóa Auth:", e);
-    }
+    localStorage.removeItem("token");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
   };
 
   return (

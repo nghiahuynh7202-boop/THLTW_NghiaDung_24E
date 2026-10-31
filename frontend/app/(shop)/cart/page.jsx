@@ -3,102 +3,64 @@
 import Link from "next/link";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-
-// Hàm xử lý link ảnh sản phẩm
-const resolveImgUrl = (rawImg) => {
-  const raw = rawImg ? String(rawImg).trim() : "";
-  if (!raw) return "/images/hoa.jpg";
-  if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:") || raw.startsWith("/images/")) {
-    return raw;
-  }
-  const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
-  const cleanPath = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
-  return `http://${hostname}:8000/storage/${cleanPath}`;
-};
+import API_CONFIG from "@/config/api";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
 
-  // Lấy số lượng (hỗ trợ cả qty và quantity)
-  const getQty = (item) => Number(item.quantity ?? item.qty ?? 1);
-
-  // Tăng/giảm số lượng
-  const handleUpdateQty = (id, delta) => {
-    const item = cartItems.find((i) => i.id === id);
-    if (!item) return;
-    updateQuantity(id, getQty(item) + delta);
-  };
-
-  // Xóa 1 món
-  const handleRemoveItem = (id) => {
-    if (confirm("Bạn có chắc muốn xóa sản phẩm này khỏi giỏ hàng?")) {
-      removeFromCart(id);
-    }
-  };
-
-  // Xóa tất cả
-  const handleClearCart = () => {
-    if (confirm("Bạn có chắc muốn xóa tất cả sản phẩm trong giỏ hàng?")) {
-      clearCart();
-    }
+  // Định dạng ảnh
+  const getImageUrl = (img) => {
+    if (!img) return "/images/hoa.jpg";
+    if (img.startsWith("http") || img.startsWith("blob:") || img.startsWith("/images/")) return img;
+    const clean = img.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+    return `${API_CONFIG.ROOT_URL}/storage/${clean}`;
   };
 
   // Tính tổng tiền
   const totalPrice = cartItems.reduce(
-    (total, item) => total + Number(item.price || 0) * getQty(item),
+    (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1),
     0
   );
 
-  const formatMoney = (money) => {
-    return Number(money || 0).toLocaleString("vi-VN") + " đ";
-  };
+  const formatMoney = (val) => Number(val || 0).toLocaleString("vi-VN") + " đ";
 
   return (
     <div className="min-h-[75vh] bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        {/* Tiêu đề */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800">
             Giỏ Hàng Của Bạn ({totalCount})
           </h1>
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-[#f68b1f] font-medium transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-[#f68b1f] font-medium"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Tiếp tục mua hàng</span>
           </Link>
         </div>
 
-        {/* Giỏ trống */}
         {cartItems.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center shadow-xs">
             <ShoppingBag className="w-16 h-16 mx-auto text-gray-300 mb-3" />
-            <h2 className="text-lg font-semibold text-gray-700">
-              Giỏ hàng của bạn đang trống
-            </h2>
-            <p className="text-xs text-gray-500 mt-1 mb-6">
-              Hãy chọn cho mình những bó hoa tươi đẹp nhất nhé!
-            </p>
+            <h2 className="text-lg font-semibold text-gray-700">Giỏ hàng của bạn đang trống</h2>
+            <p className="text-xs text-gray-500 mt-1 mb-6">Hãy chọn cho mình những bó hoa tươi đẹp nhất nhé!</p>
             <Link
               href="/"
-              className="inline-block py-2.5 px-6 bg-[#f68b1f] hover:bg-[#e67300] text-white text-xs font-semibold rounded transition-colors"
+              className="inline-block py-2.5 px-6 bg-[#f68b1f] hover:bg-[#e67300] text-white text-xs font-semibold rounded"
             >
               Khám phá sản phẩm
             </Link>
           </div>
         ) : (
-          /* Danh sách giỏ hàng */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Cột danh sách món */}
+            {/* Danh sách sản phẩm */}
             <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 shadow-xs overflow-hidden">
               <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                <span className="text-xs font-bold text-gray-700 uppercase">
-                  Sản phẩm trong giỏ
-                </span>
+                <span className="text-xs font-bold text-gray-700 uppercase">Sản phẩm trong giỏ</span>
                 <button
                   type="button"
-                  onClick={handleClearCart}
+                  onClick={() => confirm("Xóa toàn bộ giỏ hàng?") && clearCart()}
                   className="text-xs text-red-500 hover:text-red-700 font-medium cursor-pointer"
                 >
                   Xóa tất cả
@@ -106,120 +68,78 @@ export default function CartPage() {
               </div>
 
               <div className="divide-y divide-gray-100">
-                {cartItems.map((item) => {
-                  const qty = getQty(item);
-                  const price = Number(item.price || 0);
-                  const imgSrc = resolveImgUrl(item.image);
-
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-16 h-16 rounded border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          <img
-                            src={imgSrc}
-                            alt={item.name || "Sản phẩm"}
-                            className="w-full h-full object-contain"
-                            onError={(e) => {
-                              e.currentTarget.src = "/images/hoa.jpg";
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-gray-800 line-clamp-1">
-                            {item.name}
-                          </h3>
-                          <p className="text-xs text-[#f68b1f] font-bold mt-0.5">
-                            {formatMoney(price)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Bộ tăng giảm số lượng */}
-                      <div className="flex items-center justify-between sm:justify-end gap-5">
-                        <div className="flex items-center border border-gray-300 rounded">
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateQty(item.id, -1)}
-                            className="p-1.5 hover:bg-gray-100 text-gray-600 cursor-pointer"
-                            title="Giảm 1"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="px-3 text-xs font-semibold text-gray-800">
-                            {qty}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleUpdateQty(item.id, 1)}
-                            className="p-1.5 hover:bg-gray-100 text-gray-600 cursor-pointer"
-                            title="Tăng 1"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
-
-                        <span className="text-sm font-bold text-gray-800 min-w-[90px] text-right">
-                          {formatMoney(price * qty)}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(item.id)}
-                          className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
-                          title="Xóa món này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                {cartItems.map((item) => (
+                  <div key={item.id} className="p-4 sm:p-5 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4 min-w-0">
+                      <img
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-gray-100 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <Link href={`/products/${item.slug || item.id}`} className="text-sm font-semibold text-gray-800 hover:text-[#f68b1f] line-clamp-1">
+                          {item.name}
+                        </Link>
+                        <p className="text-xs text-[#d32f2f] font-bold mt-1">
+                          {formatMoney(item.price)}
+                        </p>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div className="flex items-center gap-3">
+                      {/* Tăng giảm số lượng */}
+                      <div className="flex items-center border border-gray-200 rounded">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, Number(item.qty || 1) - 1)}
+                          className="p-1 hover:bg-gray-100 cursor-pointer"
+                        >
+                          <Minus className="w-3.5 h-3.5 text-gray-500" />
+                        </button>
+                        <span className="px-2.5 text-xs font-semibold">{item.qty || 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.id, Number(item.qty || 1) + 1)}
+                          className="p-1 hover:bg-gray-100 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-gray-500" />
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => removeFromCart(item.id)}
+                        className="text-gray-400 hover:text-red-500 p-1 cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Cột tóm tắt & Nút chuyển sang trang Thanh toán */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5 shadow-xs h-fit space-y-4">
-              <h2 className="text-sm font-bold text-gray-800 uppercase border-b border-gray-100 pb-2">
-                Tóm Tắt Đơn Hàng
+            {/* Tóm tắt đơn hàng */}
+            <div className="bg-white rounded-lg border border-gray-200 shadow-xs p-5 space-y-4 h-fit">
+              <h2 className="text-sm font-bold text-gray-800 border-b border-gray-100 pb-3 uppercase">
+                Tóm tắt đơn hàng
               </h2>
-
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between text-gray-600">
-                  <span>Tạm tính:</span>
-                  <span className="font-semibold text-gray-800">
-                    {formatMoney(totalPrice)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Phí giao hàng:</span>
-                  <span className="font-semibold text-emerald-600">
-                    Miễn phí
-                  </span>
-                </div>
+              <div className="flex justify-between text-xs text-gray-600">
+                <span>Tạm tính:</span>
+                <span className="font-semibold text-gray-800">{formatMoney(totalPrice)}</span>
+              </div>
+              <div className="flex justify-between text-sm font-bold text-gray-900 border-t border-gray-100 pt-3">
+                <span>Tổng tiền:</span>
+                <span className="text-[#d32f2f] text-base">{formatMoney(totalPrice)}</span>
               </div>
 
-              <div className="border-t border-gray-100 pt-3 flex justify-between items-baseline">
-                <span className="text-sm font-bold text-gray-800">Tổng cộng:</span>
-                <span className="text-lg font-bold text-[#d32f2f]">
-                  {formatMoney(totalPrice)}
-                </span>
-              </div>
-
-              {/* Nút chuyển sang trang Thanh toán riêng */}
               <Link
                 href="/checkout"
-                className="w-full py-3 bg-[#f68b1f] hover:bg-[#e67300] active:scale-[0.99] text-white font-bold text-xs rounded transition-all shadow-sm uppercase tracking-wide flex items-center justify-center gap-1.5"
+                className="w-full py-3 bg-[#f68b1f] hover:bg-[#e67300] text-white text-xs font-bold rounded flex items-center justify-center gap-2 shadow-xs transition"
               >
                 <span>Tiến hành thanh toán</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
-
-              <p className="text-[11px] text-gray-400 text-center">
-                Cam kết hoa tươi 100% & giao nhanh đúng hẹn
-              </p>
             </div>
           </div>
         )}
