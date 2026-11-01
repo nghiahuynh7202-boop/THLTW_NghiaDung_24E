@@ -15,17 +15,6 @@ class PostTopic extends Model
 
     protected $table = 'post_topics';
 
-    public static function bootSoftDeletes(): void
-    {
-        try {
-            if (\Illuminate\Support\Facades\Schema::hasColumn('post_topics', 'deleted_at')) {
-                static::addGlobalScope(new \Illuminate\Database\Eloquent\SoftDeletingScope);
-            }
-        } catch (\Throwable $e) {
-            // Ignore
-        }
-    }
-
     const UPDATED_AT = null;
 
     protected $fillable = [
@@ -38,6 +27,7 @@ class PostTopic extends Model
     protected $casts = [
         'status'     => 'integer',
         'created_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     public function posts(): HasMany

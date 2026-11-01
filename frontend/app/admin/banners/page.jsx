@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Plus, Trash2, Image as ImageIcon, CheckCircle, Upload, X } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Trash2, Image as ImageIcon, Upload, X, Search, Edit2 } from "lucide-react";
 import { getAdminBanners, createBanner, deleteBanner } from "@/services/bannerServices";
 
 // Xử lý link ảnh từ backend Laravel
@@ -20,7 +21,7 @@ function BannerRowImage({ image }) {
   const [hasError, setHasError] = useState(false);
   const src = resolveImgUrl(image);
   if (!src || hasError) {
-    return <ImageIcon className="w-6 h-6 text-slate-300" />;
+    return <ImageIcon className="w-5 h-5 text-gray-300" />;
   }
   return (
     <img
@@ -33,8 +34,11 @@ function BannerRowImage({ image }) {
 }
 
 export default function AdminBannersPage() {
+  const router = useRouter();
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // State mở form thêm banner
   const [showAddForm, setShowAddForm] = useState(false);
@@ -52,6 +56,7 @@ export default function AdminBannersPage() {
       setBanners(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Lỗi lấy danh sách banner:", err);
+      setBanners([]);
     } finally {
       setLoading(false);
     }
@@ -60,6 +65,20 @@ export default function AdminBannersPage() {
   useEffect(() => {
     loadBanners();
   }, []);
+
+  // Lọc banner theo liên kết và trạng thái
+  const filteredBanners = useMemo(() => {
+    return banners.filter((b) => {
+      if (statusFilter !== "all" && String(b.status) !== String(statusFilter)) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        return b.link?.toLowerCase().includes(term);
+      }
+      return true;
+    });
+  }, [banners, statusFilter, searchTerm]);
 
   // Khi chọn file ảnh -> tạo link preview
   const handleFileChange = (e) => {
@@ -87,71 +106,79 @@ export default function AdminBannersPage() {
       formData.append("status", 1);
 
       await createBanner(formData);
-      alert("Thêm banner mới thành công!");
+      alert("✅ Thêm banner mới thành công!");
 
-      // Reset form
       setSelectedFile(null);
       setPreviewUrl("");
       setShowAddForm(false);
       loadBanners();
     } catch (err) {
-      alert(err.response?.data?.message || "Lỗi tải ảnh banner lên server!");
+      alert("❌ " + (err.response?.data?.message || "Lỗi tải ảnh banner lên server!"));
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Xóa banner
+  // Xóa banner (chuyển vào thùng rác)
   const handleDelete = async (id) => {
-    if (!confirm("Bạn có chắc chắn muốn xóa banner này?")) return;
+    if (!confirm("Bạn có chắc chắn muốn chuyển banner này vào thùng rác?")) return;
     try {
       await deleteBanner(id);
-      alert("Đã xóa banner thành công!");
-      loadBanners();
+      alert("✅ Đã chuyển banner vào thùng rác thành công!");
+      setBanners((prev) => prev.filter((b) => b.id !== id));
     } catch {
-      alert("Lỗi khi xóa banner!");
+      alert("❌ Lỗi khi xóa banner!");
     }
   };
 
   return (
-    <div className="p-6 bg-slate-50 min-h-screen font-sans">
-      <div className="max-w-6xl mx-auto space-y-6">
-
-        {/* Thanh tiêu đề & Nút thêm */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-xs">
+    <div className="min-h-screen bg-gray-50/60 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto space-y-5">
+        {/* Header trang */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <ImageIcon className="w-6 h-6 text-[#2980b9]" />
-              <span>Quản Lý Banner Trang Chủ</span>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <ImageIcon className="w-6 h-6 text-[#f68b1f]" />
+              <span>Quản lý Banner</span>
             </h1>
-            <p className="text-xs text-slate-500 mt-1">
-              Thêm và quản lý các banner quảng cáo tự động chuyển động trên trang chủ
+            <p className="text-xs text-gray-500 mt-0.5">
+              Quản lý danh sách các banner hiển thị xoay vòng trên trang chủ
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#2980b9] hover:bg-[#20638f] text-white text-xs font-bold rounded-lg shadow-xs transition"
-          >
-            {showAddForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-            <span>{showAddForm ? "Đóng form" : "Thêm Banner Mới"}</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => router.push("/admin/banners/trash")}
+              className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-lg text-xs font-medium transition shadow-2xs cursor-pointer"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Thùng rác</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="inline-flex items-center gap-1.5 bg-[#f68b1f] hover:bg-[#e67300] text-white px-4 py-2 rounded-lg text-xs font-semibold transition shadow-xs cursor-pointer"
+            >
+              {showAddForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              <span>{showAddForm ? "Đóng form" : "Thêm banner"}</span>
+            </button>
+          </div>
         </div>
 
         {/* FORM THÊM BANNER MỚI */}
         {showAddForm && (
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-in fade-in">
-            <h2 className="text-sm font-bold text-slate-800 uppercase border-b pb-2 mb-4">
-              Thêm Banner Mới Lên Trang Chủ
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-xs animate-in fade-in">
+            <h2 className="text-xs font-bold text-gray-800 uppercase border-b border-gray-100 pb-2.5 mb-4">
+              Thêm banner mới lên trang chủ
             </h2>
 
             <form onSubmit={handleCreateBanner} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Chọn file ảnh & preview */}
+                {/* Chọn file ảnh */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Chọn hình ảnh banner <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -159,15 +186,15 @@ export default function AdminBannersPage() {
                     accept="image/*"
                     required
                     onChange={handleFileChange}
-                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#2980b9] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-lg p-1"
+                    className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-[#f68b1f] hover:file:bg-orange-100 cursor-pointer border border-gray-200 rounded-lg p-1"
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-[11px] text-gray-400 mt-1">
                     Khuyến nghị: Ảnh ngang tỉ lệ 3:1 hoặc 4:1 (Ví dụ: 1200x400px), dưới 2MB.
                   </p>
 
-                  {/* Khung xem trước ảnh */}
+                  {/* Preview ảnh */}
                   {previewUrl && (
-                    <div className="mt-3 relative rounded-lg overflow-hidden border border-slate-200 bg-slate-50 h-32 flex items-center justify-center">
+                    <div className="mt-3 relative rounded-lg overflow-hidden border border-gray-200 bg-gray-50 h-28 flex items-center justify-center">
                       <img
                         src={previewUrl}
                         alt="Xem trước banner"
@@ -180,7 +207,7 @@ export default function AdminBannersPage() {
                 {/* Liên kết và thứ tự */}
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
                       Đường dẫn liên kết khi bấm vào banner
                     </label>
                     <input
@@ -188,12 +215,12 @@ export default function AdminBannersPage() {
                       value={link}
                       onChange={(e) => setLink(e.target.value)}
                       placeholder="VD: /products hoặc /category/hoa-sinh-nhat"
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#2980b9]"
+                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-[#f68b1f]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
                       Thứ tự hiển thị (Số nhỏ chạy trước)
                     </label>
                     <input
@@ -201,102 +228,152 @@ export default function AdminBannersPage() {
                       min={0}
                       value={orderNum}
                       onChange={(e) => setOrderNum(Number(e.target.value))}
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:border-[#2980b9]"
+                      className="w-full px-3 py-2 text-xs border border-gray-200 rounded-lg focus:outline-none focus:border-[#f68b1f]"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="w-full py-2.5 mt-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white text-xs font-bold rounded-lg transition flex items-center justify-center gap-2"
+                    className="w-full py-2.5 mt-2 bg-[#f68b1f] hover:bg-[#e67300] disabled:bg-gray-300 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                   >
                     <Upload className="w-4 h-4" />
-                    <span>{submitting ? "Đang tải lên..." : "Tải Lên & Lưu Banner"}</span>
+                    <span>{submitting ? "Đang tải lên..." : "Tải lên & Lưu banner"}</span>
                   </button>
                 </div>
-
               </div>
             </form>
           </div>
         )}
 
         {/* BẢNG DANH SÁCH BANNER */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-            <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Danh Sách Banner ({banners.length})
-            </span>
-            <span className="text-xs text-slate-400">
-              Các banner này sẽ tự động chuyển động xoay vòng trên trang chủ
-            </span>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-gray-800">Danh sách banner</span>
+              <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                {filteredBanners.length}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Ô tìm kiếm */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Tìm theo đường dẫn liên kết..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] w-48 sm:w-56"
+                />
+              </div>
+
+              {/* Lọc trạng thái */}
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="py-1.5 px-2.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] bg-white text-gray-600"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Đã ẩn</option>
+              </select>
+            </div>
           </div>
 
-          {loading ? (
-            <div className="p-8 text-center text-xs text-slate-400">
-              Đang tải danh sách banner...
-            </div>
-          ) : banners.length === 0 ? (
-            <div className="p-12 text-center text-slate-500">
-              <ImageIcon className="w-12 h-12 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm font-semibold">Chưa có banner nào trong cơ sở dữ liệu.</p>
-              <p className="text-xs text-slate-400 mt-1">
-                Hãy bấm nút &quot;Thêm Banner Mới&quot; ở trên để tải ảnh lên nhé!
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600">
-                <thead className="bg-slate-100/75 text-slate-700 font-bold uppercase text-[11px] border-b border-slate-200">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="bg-gray-50/70 border-b border-gray-200 text-gray-600 font-semibold uppercase tracking-wider text-[11px]">
+                  <th className="py-3 px-4 w-16 text-center">STT</th>
+                  <th className="py-3 px-4 w-48">Hình ảnh</th>
+                  <th className="py-3 px-4">Đường dẫn liên kết</th>
+                  <th className="py-3 px-4 text-center w-24">Thứ tự</th>
+                  <th className="py-3 px-4 text-center w-28">Trạng thái</th>
+                  <th className="py-3 px-4 text-center w-24">Hành động</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
                   <tr>
-                    <th className="py-3 px-4 w-12 text-center">STT</th>
-                    <th className="py-3 px-4 w-52">Hình ảnh Banner</th>
-                    <th className="py-3 px-4">Đường dẫn liên kết</th>
-                    <th className="py-3 px-4 w-24 text-center">Thứ tự</th>
-                    <th className="py-3 px-4 w-28 text-center">Trạng thái</th>
-                    <th className="py-3 px-4 w-20 text-center">Hành động</th>
+                    <td colSpan={6} className="text-center py-12 text-gray-400">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-[#f68b1f] border-t-transparent rounded-full animate-spin" />
+                        <span>Đang tải banner...</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {banners.map((item, index) => (
-                    <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 text-center font-semibold">
+                ) : filteredBanners.length > 0 ? (
+                  filteredBanners.map((item, index) => (
+                    <tr key={item.id} className="hover:bg-orange-50/20 transition-colors">
+                      {/* STT */}
+                      <td className="py-3.5 px-4 text-center text-gray-500 font-medium">
                         {index + 1}
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="w-44 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+
+                      {/* Hình ảnh */}
+                      <td className="py-3.5 px-4">
+                        <div className="w-40 h-14 rounded-lg border border-gray-200 overflow-hidden bg-white shrink-0 flex items-center justify-center">
                           <BannerRowImage image={item.image} />
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-700 text-[11px]">
-                        {item.link || "/"}
-                      </td>
-                      <td className="py-3 px-4 text-center font-semibold">
-                        {item.order_num ?? 0}
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                          <CheckCircle className="w-3 h-3" />
-                          <span>Hiển thị</span>
+
+                      {/* Link */}
+                      <td className="py-3.5 px-4">
+                        <span className="text-[11px] font-mono text-gray-500 bg-gray-100/80 px-2 py-0.5 rounded">
+                          {item.link || "/"}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(item.id)}
-                          className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition cursor-pointer"
-                          title="Xóa banner này"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                      {/* Thứ tự */}
+                      <td className="py-3.5 px-4 text-center font-medium text-gray-700">
+                        {item.order_num ?? 0}
+                      </td>
+
+                      {/* Trạng thái */}
+                      <td className="py-3.5 px-4 text-center">
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-medium">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Hiển thị
+                        </span>
+                      </td>
+
+                      {/* Hành động */}
+                      <td className="py-3.5 px-4 text-center">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => router.push(`/admin/banners/update?id=${item.id}`)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-md transition cursor-pointer"
+                            title="Chỉnh sửa banner"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(item.id)}
+                            className="p-1.5 text-red-500 hover:bg-red-50 border border-red-200 rounded-md transition cursor-pointer"
+                            title="Xóa banner"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="text-center py-10 text-gray-400">
+                      <ImageIcon className="w-10 h-10 mx-auto text-gray-300 mb-2" />
+                      <p className="text-xs font-medium text-gray-500">Chưa có banner nào</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-
       </div>
     </div>
   );

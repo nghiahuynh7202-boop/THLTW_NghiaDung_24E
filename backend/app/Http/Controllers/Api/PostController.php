@@ -93,13 +93,10 @@ class PostController extends Controller
     /**
      * DELETE /api/admin/posts/{post} — Xóa tạm bài viết (vào thùng rác)
      */
-    public function destroy(Post $post): JsonResponse
+    public function destroy($id): JsonResponse
     {
-        $post->update(['status' => 0]);
-
-        if (\Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at')) {
-            $post->delete();
-        }
+        $post = $id instanceof Post ? $id : Post::findOrFail($id);
+        $post->delete();
 
         return response()->json([
             'message' => 'Xóa tạm bài viết thành công (đã chuyển vào thùng rác).',
@@ -112,11 +109,6 @@ class PostController extends Controller
     public function trash(Request $request): AnonymousResourceCollection
     {
         $perPage = (int) $request->input('per_page', 12);
-
-        if (! \Illuminate\Support\Facades\Schema::hasColumn('posts', 'deleted_at')) {
-            $empty = Post::whereRaw('1 = 0')->paginate($perPage);
-            return PostResource::collection($empty);
-        }
 
         $posts = Post::onlyTrashed()
             ->with(['topic', 'user'])
@@ -133,6 +125,7 @@ class PostController extends Controller
     {
         $post = Post::onlyTrashed()->findOrFail($id);
         $post->restore();
+        $post->update(['status' => 1]);
 
         return (new PostResource($post->load(['topic', 'user'])))
             ->additional(['message' => 'Khôi phục bài viết thành công.'])

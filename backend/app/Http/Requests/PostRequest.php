@@ -48,7 +48,7 @@ class PostRequest extends FormRequest
                 'max:255',
                 $slugRule,
             ],
-            'image'    => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'image'    => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048', new \App\Rules\UniqueImage('posts', 'image', $postId)],
             'summary'  => ['nullable', 'string', 'max:500'],
             'content'  => [$isCreate ? 'required' : 'sometimes', 'string'],
             'status'   => ['nullable', 'integer', 'in:0,1'],

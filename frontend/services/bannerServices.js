@@ -44,3 +44,33 @@ export async function deleteBanner(id) {
   const res = await axiosAdmin.delete(`${ADMIN_BANNERS}/${id}`);
   return res?.data ?? res;
 }
+
+// 5. Lấy chi tiết 1 banner theo ID (Admin)
+export async function getBannerById(id) {
+  const res = await axiosAdmin.get(`${ADMIN_BANNERS}/${id}`);
+  return res?.data ?? res;
+}
+
+// 6. Cập nhật banner (Admin - hỗ trợ đổi ảnh hoặc giữ ảnh cũ)
+export async function updateBanner(id, formData) {
+  const res = await axiosAdmin.post(`${ADMIN_BANNERS}/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res?.data ?? res;
+}
+
+// 7. Lấy danh sách banner trong thùng rác
+export async function getTrashBanners(params = {}) {
+  const res = await axiosAdmin.get(`${ADMIN_BANNERS}/trash`, { params });
+  return res;
+}
+
+// 8. Khôi phục banner từ thùng rác
+export async function restoreBanner(id) {
+  return await axiosAdmin.patch(`${ADMIN_BANNERS}/${id}/restore`);
+}
+
+// 9. Xóa vĩnh viễn banner khỏi database
+export async function forceDeleteBanner(id) {
+  return await axiosAdmin.delete(`${ADMIN_BANNERS}/${id}/force`);
+}

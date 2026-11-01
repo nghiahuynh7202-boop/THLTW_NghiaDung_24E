@@ -56,10 +56,11 @@ class PostTopicController extends Controller
     }
 
     /**
-     * PUT|PATCH /api/admin/post-topics/{post_topic} — Cập nhật chủ đề bài viết
+     * PUT|PATCH /api/admin/post-topics/{id} hoặc POST /api/admin/post-topics/{id} — Cập nhật chủ đề bài viết
      */
-    public function update(PostTopicRequest $request, PostTopic $postTopic): JsonResponse
+    public function update(PostTopicRequest $request, $id): JsonResponse
     {
+        $postTopic = $id instanceof PostTopic ? $id : PostTopic::findOrFail($id);
         $data = $request->validated();
 
         if (array_key_exists('slug', $data) && empty($data['slug'])) {
@@ -74,11 +75,11 @@ class PostTopicController extends Controller
     }
 
     /**
-     * DELETE /api/admin/post-topics/{post_topic} — Xóa tạm chủ đề bài viết (vào thùng rác)
+     * DELETE /api/admin/post-topics/{id} — Xóa tạm chủ đề bài viết (vào thùng rác)
      */
-    public function destroy(PostTopic $postTopic): JsonResponse
+    public function destroy($id): JsonResponse
     {
-        $postTopic->update(['status' => 0]);
+        $postTopic = $id instanceof PostTopic ? $id : PostTopic::findOrFail($id);
         $postTopic->delete();
 
         return response()->json([
@@ -106,6 +107,7 @@ class PostTopicController extends Controller
     {
         $topic = PostTopic::onlyTrashed()->findOrFail($id);
         $topic->restore();
+        $topic->update(['status' => 1]);
 
         return (new PostTopicResource($topic))
             ->additional(['message' => 'Khôi phục chủ đề bài viết thành công.'])

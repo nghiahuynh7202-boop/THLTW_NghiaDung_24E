@@ -29,6 +29,7 @@ class StockDocument extends Model
         'supplier_id' => 'integer',
         'created_by'  => 'integer',
         'created_at'  => 'datetime',
+        'deleted_at'  => 'datetime',
     ];
 
     public function supplier(): BelongsTo

@@ -2,7 +2,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getCategories, deleteCategory } from "@/services/categoryServices";
-import { RefreshCw, Trash2, Plus, Edit2, Folder, Layers, Image as ImageIcon } from "lucide-react";
+import { RefreshCw, Trash2, Plus, Edit2, Folder, Layers, Image as ImageIcon, Search } from "lucide-react";
 
 const getImageUrl = (img) => {
     if (!img || typeof img !== "string") return "";
@@ -46,6 +46,8 @@ function CategoryContent() {
     const searchParams = useSearchParams();
     const refresh = searchParams.get("refresh");
     const [categories, setCategories] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
     const [currentPage, setCurrentPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const itemsPerPage = 5;
@@ -79,12 +81,28 @@ function CategoryContent() {
     useEffect(() => {
         void fetchCategories();
     }, [refresh]);
-    const pageCount = Math.ceil(categories.length / itemsPerPage);
+
+    const filteredCategories = useMemo(() => {
+        return categories.filter((item) => {
+            if (statusFilter !== "all" && String(item.status) !== String(statusFilter)) {
+                return false;
+            }
+            if (searchTerm.trim()) {
+                const term = searchTerm.toLowerCase();
+                const matchName = item.name?.toLowerCase().includes(term);
+                const matchSlug = item.slug?.toLowerCase().includes(term);
+                return matchName || matchSlug;
+            }
+            return true;
+        });
+    }, [categories, statusFilter, searchTerm]);
+
+    const pageCount = Math.ceil(filteredCategories.length / itemsPerPage) || 1;
     const currentCategories = useMemo(() => {
         const start = (currentPage - 1) * itemsPerPage;
         const end = start + itemsPerPage;
-        return categories.slice(start, end);
-    }, [categories, currentPage]);
+        return filteredCategories.slice(start, end);
+    }, [filteredCategories, currentPage]);
     const handleDelete = async (id) => {
         if (!window.confirm("Bạn chắc chắn muốn xóa danh mục này?"))
             return;
@@ -131,13 +149,44 @@ function CategoryContent() {
 
         {/* Khung Card chính: Bo góc nhẹ, viền xám hài hòa, không đậm màu */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          {/* Thanh tiêu đề con */}
-          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex items-center justify-between">
+          {/* Thanh tiêu đề con & Bộ lọc */}
+          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-800">Danh sách danh mục</span>
               <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {categories.length}
+                {filteredCategories.length}
               </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Ô tìm kiếm */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Tìm theo tên hoặc slug..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] w-48 sm:w-56"
+                />
+              </div>
+
+              {/* Lọc trạng thái */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] bg-white text-gray-600"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Đã ẩn</option>
+              </select>
             </div>
           </div>
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Pagination from "@/components/shop/ui/Pagination";
 import { getAdminProducts, deleteProduct } from "@/services/productServices";
-import { Trash2, Plus, Edit2, Package, Image as ImageIcon } from "lucide-react";
+import { Trash2, Plus, Edit2, Package, Image as ImageIcon, Search } from "lucide-react";
 import API_CONFIG from "@/config/api";
 
 const ITEMS_PER_PAGE = 5;
@@ -47,6 +47,8 @@ function ProductContent() {
   const refresh = searchParams.get("refresh");
 
   const [products, setProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -79,10 +81,26 @@ function ProductContent() {
       });
   };
 
+  // Lọc sản phẩm theo từ khóa và trạng thái
+  const filteredProducts = useMemo(() => {
+    return products.filter((item) => {
+      if (statusFilter !== "all" && String(item.status) !== String(statusFilter)) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchName = item.name?.toLowerCase().includes(term);
+        const matchSlug = item.slug?.toLowerCase().includes(term);
+        return matchName || matchSlug;
+      }
+      return true;
+    });
+  }, [products, statusFilter, searchTerm]);
+
   // Tính toán phân trang phía client
-  const pageCount = Math.max(1, Math.ceil(products.length / ITEMS_PER_PAGE));
+  const pageCount = Math.max(1, Math.ceil(filteredProducts.length / ITEMS_PER_PAGE));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const currentProducts = products.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const currentProducts = filteredProducts.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   return (
     <div className="min-h-screen bg-gray-50/60 p-4 sm:p-6 lg:p-8">
@@ -119,12 +137,44 @@ function ProductContent() {
 
         {/* Bảng danh sách sản phẩm */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
+          {/* Thanh tiêu đề con & Bộ lọc */}
+          <div className="px-5 py-3.5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-800">Danh sách sản phẩm</span>
               <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {products.length}
+                {filteredProducts.length}
               </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Ô tìm kiếm */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Tìm tên, slug sản phẩm..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] w-48 sm:w-56"
+                />
+              </div>
+
+              {/* Lọc trạng thái */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] bg-white text-gray-600"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Đã ẩn</option>
+              </select>
             </div>
           </div>
 

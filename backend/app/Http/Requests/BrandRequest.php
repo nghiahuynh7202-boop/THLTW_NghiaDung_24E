@@ -16,8 +16,9 @@ class BrandRequest extends FormRequest
 
     public function rules(): array
     {
-        $brandId = $this->route('brand') ? ($this->route('brand')->id ?? $this->route('brand')) : null;
-        $isCreate = $this->isMethod('post');
+        $brandRoute = $this->route('brand') ?? $this->route('id');
+        $brandId = is_object($brandRoute) ? ($brandRoute->id ?? null) : $brandRoute;
+        $isCreate = empty($brandId);
 
         return [
             'name'        => [
@@ -32,7 +33,7 @@ class BrandRequest extends FormRequest
                 'max:150',
                 Rule::unique('brands', 'slug')->ignore($brandId)->whereNull('deleted_at'),
             ],
-            'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048', new \App\Rules\UniqueImage('brands', 'image', $brandId)],
             'description' => ['nullable', 'string'],
             'status'      => ['nullable', 'integer', 'in:0,1'],
         ];

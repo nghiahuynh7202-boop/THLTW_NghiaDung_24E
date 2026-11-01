@@ -16,8 +16,17 @@ class PostTopicRequest extends FormRequest
 
     public function rules(): array
     {
-        $topicId = $this->route('post_topic') ? ($this->route('post_topic')->id ?? $this->route('post_topic')) : null;
-        $isCreate = $this->isMethod('post');
+        $topicId = $this->route('post_topic');
+        if ($topicId instanceof \App\Models\PostTopic) {
+            $topicId = $topicId->id;
+        } elseif (is_array($topicId)) {
+            $topicId = $topicId['id'] ?? null;
+        }
+        if (! $topicId) {
+            $topicId = $this->route('id');
+        }
+
+        $isCreate = $this->isMethod('post') && empty($topicId);
 
         return [
             'name'        => [

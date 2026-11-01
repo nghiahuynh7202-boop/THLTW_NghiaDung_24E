@@ -60,8 +60,9 @@ class PageController extends Controller
     /**
      * PUT|PATCH /api/admin/pages/{page} — Cập nhật trang đơn
      */
-    public function update(PageRequest $request, Page $page): JsonResponse
+    public function update(PageRequest $request, $id): JsonResponse
     {
+        $page = $id instanceof Page ? $id : Page::findOrFail($id);
         $data = $request->validated();
 
         if (array_key_exists('slug', $data) && empty($data['slug'])) {
@@ -78,9 +79,9 @@ class PageController extends Controller
     /**
      * DELETE /api/admin/pages/{page} — Xóa tạm trang đơn (vào thùng rác)
      */
-    public function destroy(Page $page): JsonResponse
+    public function destroy($id): JsonResponse
     {
-        $page->update(['status' => 0]);
+        $page = $id instanceof Page ? $id : Page::findOrFail($id);
         $page->delete();
 
         return response()->json([
@@ -108,6 +109,7 @@ class PageController extends Controller
     {
         $page = Page::onlyTrashed()->findOrFail($id);
         $page->restore();
+        $page->update(['status' => 1]);
 
         return (new PageResource($page))
             ->additional(['message' => 'Khôi phục trang đơn thành công.'])

@@ -102,7 +102,14 @@ class UserController extends Controller
     public function destroy(mixed $user): JsonResponse
     {
         $userModel = $user instanceof User ? $user : User::findOrFail($user);
-        $userModel->update(['status' => 0]);
+
+        // Không cho phép xóa tài khoản Admin
+        if ($userModel->role === 'admin') {
+            return response()->json([
+                'message' => 'Không được phép xóa tài khoản Quản trị viên (Admin)!',
+            ], 403);
+        }
+
         $userModel->delete();
 
         return response()->json([
@@ -130,6 +137,7 @@ class UserController extends Controller
     {
         $user = User::onlyTrashed()->findOrFail($id);
         $user->restore();
+        $user->update(['status' => 1]);
 
         return (new UserResource($user))
             ->additional(['message' => 'Khôi phục người dùng thành công.'])
@@ -150,15 +158,23 @@ class UserController extends Controller
     }
 
     /**
-     * PATCH /api/admin/users/{id}/toggle-status — Chặn / Mở chặn tài khoản người dùng
+     * PATCH /api/admin/users/{id}/toggle-status — Khóa / Mở khóa tài khoản người dùng
      */
     public function toggleStatus(int|string $id): JsonResponse
     {
         $user = User::findOrFail($id);
+
+        // Không được phép khóa tài khoản Admin
+        if ($user->role === 'admin') {
+            return response()->json([
+                'message' => 'Không được phép khóa tài khoản Quản trị viên (Admin)!',
+            ], 403);
+        }
+
         $newStatus = (int) $user->status === 1 ? 0 : 1;
         $user->update(['status' => $newStatus]);
 
-        $message = $newStatus === 1 ? 'Đã bỏ chặn người dùng.' : 'Đã chặn người dùng.';
+        $message = $newStatus === 1 ? 'Đã mở khóa tài khoản người dùng.' : 'Đã khóa tài khoản người dùng.';
 
         return response()->json([
             'message' => $message,

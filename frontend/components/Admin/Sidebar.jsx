@@ -15,17 +15,27 @@ import {
   FileText,
   Tag,
   Sparkles,
+  FolderTree,
+  Menu as MenuIcon,
+  Globe,
+  Warehouse,
+  Truck,
 } from "lucide-react";
 
 const navigationItems = [
   { name: "Trang chủ", href: "/admin", icon: LayoutDashboard },
   { name: "Quản lý đơn hàng", href: "/admin/order", icon: ShoppingBag, badge: "3" },
   { name: "Quản lý sản phẩm", href: "/admin/products", icon: Package },
+  { name: "Quản lý kho hàng", href: "/admin/stocks", icon: Warehouse },
+  { name: "Quản lý nhà cung cấp", href: "/admin/suppliers", icon: Truck },
   { name: "Quản lý danh mục", href: "/admin/category", icon: Layers },
   { name: "Quản lý thương hiệu", href: "/admin/brands", icon: Award },
   { name: "Khuyến mãi & Sale", href: "/admin/sales", icon: Tag },
   { name: "Quản lý banner", href: "/admin/banners", icon: ImageIcon },
+  { name: "Chủ đề bài viết", href: "/admin/post-topics", icon: FolderTree },
   { name: "Quản lý bài viết", href: "/admin/posts", icon: FileText },
+  { name: "Quản lý trang đơn", href: "/admin/pages", icon: Globe },
+  { name: "Quản lý Menu", href: "/admin/menus", icon: MenuIcon },
   { name: "Quản lý thư liên hệ", href: "/admin/contacts", icon: MessageSquare, badge: "2" },
   { name: "Quản lý khách hàng", href: "/admin/users", icon: Users },
 ];

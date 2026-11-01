@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Banner extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'banners';
 
@@ -27,6 +28,7 @@ class Banner extends Model
             'order_num'  => 'integer',
             'status'     => 'integer',
             'created_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 

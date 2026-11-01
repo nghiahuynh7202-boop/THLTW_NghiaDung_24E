@@ -39,7 +39,7 @@ class CategoryRequest extends FormRequest
                     ->where(fn ($query) => $query->where('status', '!=', 0)),
             ],
             'image'       => $this->hasFile('image')
-                ? ['image', 'mimes:jpeg,png,jpg,webp,gif', 'max:2048']
+                ? ['image', 'mimes:jpeg,png,jpg,webp,gif', 'max:2048', new \App\Rules\UniqueImage('categories', 'image', $categoryId)]
                 : ['nullable'],
             'is_featured' => ['nullable'],
             'status'      => ['nullable', 'integer', 'in:0,1'],

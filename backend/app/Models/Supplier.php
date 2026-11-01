@@ -26,6 +26,7 @@ class Supplier extends Model
     protected $casts = [
         'status'     => 'integer',
         'created_at' => 'datetime',
+        'deleted_at' => 'datetime',
     ];
 
     public function stockDocuments(): HasMany

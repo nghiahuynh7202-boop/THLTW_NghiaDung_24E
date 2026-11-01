@@ -23,6 +23,19 @@ class SupplierController extends Controller
             $query->active();
         }
 
+        if ($request->filled('keyword')) {
+            $keyword = trim($request->input('keyword'));
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                  ->orWhere('phone', 'like', "%{$keyword}%")
+                  ->orWhere('address', 'like', "%{$keyword}%");
+            });
+        }
+
+        if ($request->filled('status') && $request->input('status') !== 'all') {
+            $query->where('status', (int) $request->input('status'));
+        }
+
         $perPage = (int) $request->input('per_page', 12);
         $suppliers = $query->paginate($perPage);
 
@@ -54,25 +67,26 @@ class SupplierController extends Controller
     }
 
     /**
-     * PUT|PATCH /api/admin/suppliers/{supplier} — Cập nhật nhà cung cấp
+     * PUT|PATCH /api/admin/suppliers/{id} — Cập nhật nhà cung cấp
      */
-    public function update(SupplierRequest $request, Supplier $supplier): JsonResponse
+    public function update(SupplierRequest $request, $supplier): JsonResponse
     {
+        $model = $supplier instanceof Supplier ? $supplier : Supplier::findOrFail($supplier);
         $data = $request->validated();
-        $supplier->update($data);
+        $model->update($data);
 
-        return (new SupplierResource($supplier))
+        return (new SupplierResource($model))
             ->additional(['message' => 'Cập nhật nhà cung cấp thành công.'])
             ->response();
     }
 
     /**
-     * DELETE /api/admin/suppliers/{supplier} — Xóa tạm nhà cung cấp (vào thùng rác)
+     * DELETE /api/admin/suppliers/{id} — Xóa tạm nhà cung cấp (vào thùng rác)
      */
-    public function destroy(Supplier $supplier): JsonResponse
+    public function destroy($supplier): JsonResponse
     {
-        $supplier->update(['status' => 0]);
-        $supplier->delete();
+        $model = $supplier instanceof Supplier ? $supplier : Supplier::findOrFail($supplier);
+        $model->delete();
 
         return response()->json([
             'message' => 'Xóa tạm nhà cung cấp thành công (đã chuyển vào thùng rác).',
@@ -84,10 +98,19 @@ class SupplierController extends Controller
      */
     public function trash(Request $request): AnonymousResourceCollection
     {
+        $query = Supplier::onlyTrashed()->latest('deleted_at');
+
+        if ($request->filled('keyword')) {
+            $keyword = trim($request->input('keyword'));
+            $query->where(function ($q) use ($keyword) {
+                $q->where('name', 'like', "%{$keyword}%")
+                  ->orWhere('phone', 'like', "%{$keyword}%")
+                  ->orWhere('address', 'like', "%{$keyword}%");
+            });
+        }
+
         $perPage = (int) $request->input('per_page', 12);
-        $suppliers = Supplier::onlyTrashed()
-            ->latest('deleted_at')
-            ->paginate($perPage);
+        $suppliers = $query->paginate($perPage);
 
         return SupplierResource::collection($suppliers);
     }
@@ -99,6 +122,7 @@ class SupplierController extends Controller
     {
         $supplier = Supplier::onlyTrashed()->findOrFail($id);
         $supplier->restore();
+        $supplier->update(['status' => 1]);
 
         return (new SupplierResource($supplier))
             ->additional(['message' => 'Khôi phục nhà cung cấp thành công.'])
