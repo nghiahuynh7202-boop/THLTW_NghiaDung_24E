@@ -7,6 +7,8 @@ import { useCart } from "@/context/CartContext";
 import Toast from "@/components/home/Toast";
 import { useToast } from "@/hooks/useToast";
 import RelatedProducts from "./RelatedProducts";
+import ProductReviews from "./ProductReviews";
+import { Star } from "lucide-react";
 
 /**
  * GIAO DIỆN CHI TIẾT SẢN PHẨM (Code tối giản - Dễ giải thích cho đồ án)
@@ -92,19 +94,30 @@ export default function ProductDetail({ product }) {
             {name}
           </h1>
 
-          {/* Hiển thị số lượng còn trong kho (Đơn giản, dễ hiểu) */}
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-gray-500">Kho hàng:</span>
-            {stock > 0 ? (
-              <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                Còn {stock} sản phẩm
-              </span>
-            ) : (
-              <span className="font-semibold text-red-600 bg-red-50 px-2.5 py-0.5 rounded border border-red-200">
-                Hết hàng
-              </span>
-            )}
+          {/* Đánh giá sao & Kho hàng */}
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5 bg-amber-50/60 px-2.5 py-1 rounded-md border border-amber-200/50">
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span className="font-bold text-amber-900">{product?.avg_rating ?? "5.0"}</span>
+              <span className="text-gray-400 font-normal">({product?.reviews_count ?? 0} đánh giá)</span>
+            </div>
+
+            <span className="text-gray-300">•</span>
+
+            {/* Hiển thị số lượng còn trong kho (Đơn giản, dễ hiểu) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">Kho hàng:</span>
+              {stock > 0 ? (
+                <span className="inline-flex items-center gap-1.5 font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Còn {stock} sản phẩm
+                </span>
+              ) : (
+                <span className="font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                  Hết hàng
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Khung hiển thị Giá tiền */}
@@ -245,6 +258,11 @@ export default function ProductDetail({ product }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ĐÁNH GIÁ & NHẬN XÉT SẢN PHẨM */}
+      <div className="mt-12 pt-8 border-t border-gray-100">
+        <ProductReviews productId={product?.id} />
       </div>
 
       {/* SẢN PHẨM TƯƠNG TỰ */}

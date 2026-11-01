@@ -24,7 +24,32 @@ class PostController extends Controller
             $query->active();
         }
 
-        $perPage = (int) $request->input('per_page', 12);
+        // Tìm kiếm theo từ khóa (tiêu đề, slug, tóm tắt, nội dung, chuyên mục)
+        if ($kw = trim($request->input('keyword', $request->input('search', '')))) {
+            $query->where(function ($q) use ($kw) {
+                $q->where('title', 'like', "%{$kw}%")
+                  ->orWhere('slug', 'like', "%{$kw}%")
+                  ->orWhere('summary', 'like', "%{$kw}%")
+                  ->orWhere('content', 'like', "%{$kw}%")
+                  ->orWhereHas('topic', function ($tq) use ($kw) {
+                      $tq->where('name', 'like', "%{$kw}%")
+                         ->orWhere('slug', 'like', "%{$kw}%");
+                  });
+            });
+        }
+
+        // Lọc theo chủ đề bài viết (topic_id hoặc topic_slug)
+        if ($topicId = $request->input('topic_id')) {
+            if ($topicId !== 'all') {
+                $query->where('topic_id', $topicId);
+            }
+        } elseif ($topicSlug = $request->input('topic_slug')) {
+            if ($topicSlug !== 'all') {
+                $query->whereHas('topic', fn($q) => $q->where('slug', $topicSlug));
+            }
+        }
+
+        $perPage = (int) $request->input('per_page', 9);
         $posts = $query->paginate($perPage);
 
         return PostResource::collection($posts);

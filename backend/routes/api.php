@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\PostTopicController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProductSaleController;
+use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\StockDocumentController;
 use App\Http\Controllers\Api\StockDocumentItemController;
 use App\Http\Controllers\Api\SupplierController;
@@ -24,6 +25,8 @@ use Illuminate\Support\Facades\Route;
 // =========================================================================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::put('/profile', [AuthController::class, 'updateProfile']);
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -46,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
 // =========================================================================
 Route::get('/products', [ProductController::class, 'index']);
 Route::get('/products/{product}', [ProductController::class, 'show']);
+Route::get('/products/{productId}/reviews', [ReviewController::class, 'getProductReviews']);
+Route::post('/products/{productId}/reviews', [ReviewController::class, 'storeProductReview'])->middleware('auth:sanctum');
 
 Route::get('/brands', [BrandController::class, 'index']);
 Route::get('/brands/{brand}', [BrandController::class, 'show']);
@@ -93,6 +98,7 @@ Route::prefix('admin')->group(function () {
     Route::get('products/trash', [ProductController::class, 'trash']);
     Route::patch('products/{id}/restore', [ProductController::class, 'restore']);
     Route::delete('products/{id}/force', [ProductController::class, 'forceDelete']);
+    Route::patch('products/{id}/toggle', [ProductController::class, 'toggleStatus']);
     Route::apiResource('products', ProductController::class);
 
     // 2. Thương hiệu (Brands)
@@ -187,4 +193,9 @@ Route::prefix('admin')->group(function () {
     Route::delete('productsales/{id}/force', [ProductSaleController::class, 'forceDelete']);
     Route::post('productsales/{id}', [ProductSaleController::class, 'update']);
     Route::apiResource('productsales', ProductSaleController::class);
+
+    // 16. Đánh giá sản phẩm (Reviews - Admin)
+    Route::get('reviews', [ReviewController::class, 'indexAdmin']);
+    Route::patch('reviews/{id}/toggle', [ReviewController::class, 'toggleStatus']);
+    Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
 });

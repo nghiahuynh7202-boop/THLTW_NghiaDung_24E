@@ -15,7 +15,7 @@ class PostResource extends JsonResource
             'topic_id'   => $this->topic_id,
             'title'      => $this->title,
             'slug'       => $this->slug,
-            'image'      => $this->image ? asset('storage/' . $this->image) : null,
+            'image'      => $this->image ? (str_starts_with($this->image, 'http') ? $this->image : asset('storage/' . ltrim($this->image, '/'))) : null,
             'summary'    => $this->summary,
             'content'    => $this->content,
             'status'     => $this->status,
