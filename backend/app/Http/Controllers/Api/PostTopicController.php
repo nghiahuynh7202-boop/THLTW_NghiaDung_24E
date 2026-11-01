@@ -17,13 +17,15 @@ class PostTopicController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = PostTopic::latest('id');
+        $query = PostTopic::withCount(['posts' => function ($q) {
+            $q->active();
+        }])->latest('id');
 
         if (! $request->is('api/admin/*')) {
             $query->active();
         }
 
-        $perPage = (int) $request->input('per_page', 12);
+        $perPage = (int) $request->input('per_page', 50);
         $topics = $query->paginate($perPage);
 
         return PostTopicResource::collection($topics);

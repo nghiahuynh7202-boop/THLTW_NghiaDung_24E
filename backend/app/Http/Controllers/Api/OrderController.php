@@ -10,10 +10,13 @@ use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\ProductSale;
 use App\Models\User;
+use App\Mail\OrderPlacedMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -118,6 +121,15 @@ class OrderController extends Controller
 
             return $order;
         });
+
+        // 6. Tự động gửi email xác nhận đặt hàng về Gmail của khách
+        if (! empty($order->email)) {
+            try {
+                Mail::to($order->email)->send(new OrderPlacedMail($order));
+            } catch (\Throwable $e) {
+                Log::error('Lỗi gửi email xác nhận đơn hàng #' . $order->id . ': ' . $e->getMessage());
+            }
+        }
 
         return (new OrderResource($order->load(['details.product', 'user'])))
             ->additional(['message' => 'Đặt hàng thành công.'])

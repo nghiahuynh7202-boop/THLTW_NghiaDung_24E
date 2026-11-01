@@ -53,6 +53,24 @@ class Product extends Model
         return $this->hasMany(OrderDetail::class, 'product_id');
     }
 
+    // Danh sách đánh giá & nhận xét của sản phẩm
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'product_id');
+    }
+
+    // Điểm đánh giá trung bình (chỉ tính review status = 1)
+    public function getAvgRatingAttribute(): float
+    {
+        return round((float) ($this->reviews()->where('status', 1)->avg('rating') ?? 5.0), 1);
+    }
+
+    // Tổng số lượt đánh giá công khai
+    public function getReviewsCountAttribute(): int
+    {
+        return (int) $this->reviews()->where('status', 1)->count();
+    }
+
     // Chỉ lấy sản phẩm đang bật (status = 1)
     public function scopeActive(Builder $query): void
     {

@@ -30,6 +30,24 @@ export async function getPublicPosts(params = {}) {
   }
 }
 
+// 1.1 Lấy danh sách bài viết kèm metadata phân trang (Client)
+export async function getPublicPostsWithPagination(params = {}) {
+  try {
+    const res = await axiosClient.get("/posts", { params });
+    const items = extractList(res);
+    const meta = res?.meta ?? res?.pagination ?? {
+      current_page: res?.current_page ?? 1,
+      last_page: res?.last_page ?? 1,
+      total: res?.total ?? items.length,
+      per_page: res?.per_page ?? 9,
+    };
+    return { data: items, meta };
+  } catch (error) {
+    console.error("Lỗi getPublicPostsWithPagination:", error);
+    return { data: [], meta: { current_page: 1, last_page: 1, total: 0, per_page: 9 } };
+  }
+}
+
 // 2. Lấy danh sách bài viết (Admin)
 export async function getAdminPosts(params = {}) {
   const res = await axiosAdmin.get(ADMIN_POSTS, { params });

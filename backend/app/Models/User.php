@@ -60,6 +60,12 @@ class User extends Authenticatable
         return $this->hasMany(Post::class);
     }
 
+    // Quan hệ: Một người dùng có nhiều đánh giá sản phẩm
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class, 'user_id');
+    }
+
     // Scope lọc tài khoản đang hoạt động (status = 1)
     public function scopeActive(Builder $query): void
     {

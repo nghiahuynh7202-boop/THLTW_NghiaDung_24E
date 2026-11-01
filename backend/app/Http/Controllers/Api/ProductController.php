@@ -17,6 +17,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with(['category', 'brand', 'sales'])
+            ->withCount('orderDetails')
             ->withSum(['orderDetails as sold_count' => function ($q) {
                 $q->whereHas('order', function ($oq) {
                     $oq->where('status', '!=', 5); // Chỉ tính đơn hợp lệ, không tính đơn đã hủy
@@ -148,11 +149,37 @@ class ProductController extends Controller
     // Xóa tạm vào thùng rác
     public function destroy(Product $product): JsonResponse
     {
+        // KIỂM TRA: Sản phẩm đang có đơn hàng thì không được xóa, chỉ được tạm ẩn!
+        $orderCount = $product->orderDetails()->count();
+        if ($orderCount > 0) {
+            // Tự động chuyển sản phẩm sang trạng thái Tạm ẩn (status = 0)
+            $product->update(['status' => 0]);
+
+            return response()->json([
+                'status'     => 'has_orders',
+                'new_status' => 0,
+                'message'    => "Sản phẩm này đang có {$orderCount} đơn hàng liên quan nên không được phép xóa! Hệ thống đã tự động chuyển sang trạng thái Tạm ẩn để bảo toàn lịch sử đơn hàng.",
+            ], 422);
+        }
+
         $product->update(['status' => 0]);
         $product->delete();
 
         return response()->json([
             'message' => 'Xóa tạm sản phẩm thành công.',
+        ]);
+    }
+
+    // Bật/Tắt trạng thái hiển thị (1 <-> 0)
+    public function toggleStatus(int|string $id): JsonResponse
+    {
+        $product = Product::findOrFail($id);
+        $newStatus = $product->status == 1 ? 0 : 1;
+        $product->update(['status' => $newStatus]);
+
+        return response()->json([
+            'message' => $newStatus == 1 ? 'Đã hiển thị sản phẩm công khai.' : 'Đã tạm ẩn sản phẩm thành công.',
+            'status'  => $newStatus,
         ]);
     }
 
@@ -184,6 +211,14 @@ class ProductController extends Controller
     public function forceDelete(int|string $id): JsonResponse
     {
         $product = Product::withTrashed()->findOrFail($id);
+
+        // KIỂM TRA: Sản phẩm đang có đơn hàng thì tuyệt đối không được xóa!
+        $orderCount = $product->orderDetails()->count();
+        if ($orderCount > 0) {
+            return response()->json([
+                'message' => "Sản phẩm này đang có {$orderCount} đơn hàng liên quan trong hệ thống! Không thể xóa vĩnh viễn vì sẽ làm mất dữ liệu đơn hàng của khách. Bạn chỉ có thể tạm ẩn sản phẩm.",
+            ], 422);
+        }
 
         if ($product->image) {
             Storage::disk('public')->delete($product->image);

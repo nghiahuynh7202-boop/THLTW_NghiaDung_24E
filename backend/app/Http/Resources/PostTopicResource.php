@@ -15,7 +15,7 @@ class PostTopicResource extends JsonResource
             'slug'        => $this->slug,
             'description' => $this->description,
             'status'      => $this->status,
-            'posts_count' => $this->whenCounted('posts'),
+            'posts_count' => (int) ($this->posts_count ?? 0),
             'created_at'  => $this->created_at?->format('Y-m-d H:i:s'),
             'deleted_at'  => $this->deleted_at?->format('Y-m-d H:i:s'),
         ];

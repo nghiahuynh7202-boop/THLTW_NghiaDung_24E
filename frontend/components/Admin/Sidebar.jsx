@@ -20,12 +20,14 @@ import {
   Globe,
   Warehouse,
   Truck,
+  Star,
 } from "lucide-react";
 
 const navigationItems = [
   { name: "Trang chủ", href: "/admin", icon: LayoutDashboard },
   { name: "Quản lý đơn hàng", href: "/admin/order", icon: ShoppingBag, badge: "3" },
   { name: "Quản lý sản phẩm", href: "/admin/products", icon: Package },
+  { name: "Quản lý đánh giá", href: "/admin/reviews", icon: Star },
   { name: "Quản lý kho hàng", href: "/admin/stocks", icon: Warehouse },
   { name: "Quản lý nhà cung cấp", href: "/admin/suppliers", icon: Truck },
   { name: "Quản lý danh mục", href: "/admin/category", icon: Layers },

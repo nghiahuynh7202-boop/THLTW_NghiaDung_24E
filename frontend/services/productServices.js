@@ -63,6 +63,11 @@ export async function deleteProduct(id) {
   return await axiosAdmin.delete(`/admin/products/${id}`);
 }
 
+// Bật/Tắt trạng thái hiển thị (1 <-> 0)
+export async function toggleProductStatus(id) {
+  return await axiosAdmin.patch(`/admin/products/${id}/toggle`);
+}
+
 // Lấy danh sách thùng rác
 export async function getTrashProducts(params = {}) {
   const res = await axiosAdmin.get("/admin/products/trash", { params });

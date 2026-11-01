@@ -1,4 +1,19 @@
 import axiosAdmin from "@/lib/axiosAdmin";
+import axiosClient from "@/lib/axiosClient";
+
+// 0. Lấy danh sách chủ đề bài viết công khai (Client)
+export async function getPublicTopics(params = {}) {
+  try {
+    const res = await axiosClient.get("/post-topics", { params: { per_page: 50, ...params } });
+    if (Array.isArray(res)) return res;
+    if (Array.isArray(res?.data)) return res.data;
+    if (Array.isArray(res?.data?.data)) return res.data.data;
+    return [];
+  } catch (error) {
+    console.error("Lỗi getPublicTopics:", error);
+    return [];
+  }
+}
 
 // 1. Lấy danh sách chủ đề bài viết
 export async function getTopics(params = {}) {

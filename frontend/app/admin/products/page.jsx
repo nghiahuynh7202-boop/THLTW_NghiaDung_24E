@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Pagination from "@/components/shop/ui/Pagination";
-import { getAdminProducts, deleteProduct } from "@/services/productServices";
-import { Trash2, Plus, Edit2, Package, Image as ImageIcon, Search } from "lucide-react";
+import { getAdminProducts, deleteProduct, toggleProductStatus } from "@/services/productServices";
+import { Trash2, Plus, Edit2, Package, Image as ImageIcon, Search, Eye, EyeOff, AlertCircle } from "lucide-react";
 import API_CONFIG from "@/config/api";
 
 const ITEMS_PER_PAGE = 5;
@@ -68,16 +68,56 @@ function ProductContent() {
     loadProducts();
   }, [refresh]);
 
+  // Bật/Tắt trạng thái hiển thị của sản phẩm (Hiển thị <-> Tạm ẩn)
+  const handleToggle = async (item) => {
+    try {
+      const res = await toggleProductStatus(item.id);
+      const newStatus = Number(item.status) === 1 ? 0 : 1;
+      setProducts((prev) =>
+        prev.map((p) => (p.id === item.id ? { ...p, status: newStatus } : p))
+      );
+      alert("✅ " + (res?.data?.message || res?.message || (newStatus === 1 ? "Đã hiển thị sản phẩm công khai!" : "Đã tạm ẩn sản phẩm!")));
+    } catch (err) {
+      console.error("Lỗi đổi trạng thái:", err);
+      alert("❌ " + (err.response?.data?.message || "Không thể thay đổi trạng thái!"));
+    }
+  };
+
   // Xóa tạm sản phẩm vào thùng rác
-  const handleDelete = (id) => {
-    if (!window.confirm("Bạn chắc chắn muốn xóa sản phẩm này vào thùng rác?")) return;
-    deleteProduct(id)
+  const handleDelete = (item) => {
+    const ordersCount = Number(item.orders_count || item.order_details_count || 0);
+
+    // KIỂM TRA: Nếu sản phẩm đang có đơn hàng, không được phép xóa!
+    if (ordersCount > 0) {
+      const wantHide = window.confirm(
+        `⚠️ SẢN PHẨM KHÔNG ĐƯỢC PHÉP XÓA!\n\nSản phẩm "${item.name}" đang có ${ordersCount} đơn hàng trong hệ thống.\n\nTheo quy định để tránh mất lịch sử đơn hàng: Bạn chỉ có thể TẠM ẨN sản phẩm này khỏi shop.\n\n👉 Bạn có muốn chuyển sang trạng thái "TẠM ẨN" ngay bây giờ không?`
+      );
+      if (wantHide) {
+        if (Number(item.status) === 1) {
+          handleToggle(item);
+        } else {
+          alert("ℹ️ Sản phẩm này hiện tại đã ở trạng thái Tạm ẩn rồi!");
+        }
+      }
+      return;
+    }
+
+    if (!window.confirm(`Bạn chắc chắn muốn chuyển sản phẩm "${item.name}" vào thùng rác?`)) return;
+
+    deleteProduct(item.id)
       .then(() => {
         alert("✅ Đã chuyển sản phẩm vào thùng rác!");
-        setProducts(products.filter((p) => p.id !== id));
+        setProducts((prev) => prev.filter((p) => p.id !== item.id));
       })
       .catch((err) => {
-        alert("❌ " + (err.response?.data?.message || "Xóa thất bại"));
+        const errorMsg = err.response?.data?.message || "Xóa thất bại";
+        alert("❌ " + errorMsg);
+        // Nếu backend thông báo đã chuyển sang tạm ẩn vì có đơn hàng
+        if (err.response?.data?.status === "has_orders") {
+          setProducts((prev) =>
+            prev.map((p) => (p.id === item.id ? { ...p, status: 0 } : p))
+          );
+        }
       });
   };
 
@@ -223,6 +263,14 @@ function ProductContent() {
                                 ⭐ Nổi bật
                               </span>
                             )}
+                            {Number(item.orders_count || item.order_details_count || 0) > 0 && (
+                              <span
+                                className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded inline-flex items-center gap-1"
+                                title={`Sản phẩm đang có ${item.orders_count || item.order_details_count} đơn hàng trong hệ thống (Không được xóa, chỉ được tạm ẩn)`}
+                              >
+                                📦 {item.orders_count || item.order_details_count} đơn (chỉ tạm ẩn)
+                              </span>
+                            )}
                           </div>
                           <span className="text-[10px] text-gray-400">{item.slug}</span>
                         </td>
@@ -244,32 +292,91 @@ function ProductContent() {
                           {Number(item.qty || 0)}
                         </td>
                         <td className="py-3 px-4 text-center">
-                          {Number(item.status) === 1 ? (
-                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px]">
-                              Hiển thị
-                            </span>
-                          ) : (
-                            <span className="text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full text-[11px]">
-                              Đã ẩn
-                            </span>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleToggle(item)}
+                            title="Bấm để đổi trạng thái Hiển thị / Tạm ẩn"
+                            className="cursor-pointer transition-transform hover:scale-105"
+                          >
+                            {Number(item.status) === 1 ? (
+                              <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-semibold hover:bg-emerald-100">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Hiển thị
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-gray-600 bg-gray-100 border border-gray-200 px-2.5 py-0.5 rounded-full text-[11px] font-semibold hover:bg-gray-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                Đã tạm ẩn
+                              </span>
+                            )}
+                          </button>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <div className="inline-flex items-center gap-1.5">
+                            {/* Nút bật/tắt Tạm ẩn nhanh */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggle(item)}
+                              className={`px-2 py-1 rounded-md text-[11px] font-semibold border cursor-pointer transition-colors flex items-center gap-1 ${
+                                Number(item.status) === 1
+                                  ? "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-300"
+                                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-300"
+                              }`}
+                              title={Number(item.status) === 1 ? "Bấm để tạm ẩn sản phẩm khỏi shop" : "Bấm để mở hiển thị lại sản phẩm"}
+                            >
+                              {Number(item.status) === 1 ? (
+                                <>
+                                  <EyeOff className="w-3 h-3" />
+                                  <span>Tạm ẩn</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Eye className="w-3 h-3" />
+                                  <span>Hiện lại</span>
+                                </>
+                              )}
+                            </button>
+
+                            {/* Nút sửa */}
                             <button
                               onClick={() => router.push(`/admin/products/update?id=${item.id}`)}
                               className="p-1.5 text-blue-600 hover:bg-blue-50 border border-blue-200 rounded-md cursor-pointer"
-                              title="Chỉnh sửa"
+                              title="Chỉnh sửa sản phẩm"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="p-1.5 text-red-500 hover:bg-red-50 border border-red-200 rounded-md cursor-pointer"
-                              title="Chuyển vào thùng rác"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+
+                            {/* Nút xóa: Nếu có đơn hàng thì khóa nút xóa và chỉ cho phép tạm ẩn */}
+                            {Number(item.orders_count || item.order_details_count || 0) > 0 ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const wantHide = window.confirm(
+                                    `⚠️ SẢN PHẨM KHÔNG THỂ XÓA!\n\nSản phẩm "${item.name}" đang có ${item.orders_count || item.order_details_count} đơn hàng trong hệ thống.\n\nTheo quy định của hệ thống: Sản phẩm đã phát sinh đơn hàng KHÔNG ĐƯỢC PHÉP XÓA để bảo toàn lịch sử mua hàng của khách.\n\n👉 Bạn chỉ có thể TẠM ẨN sản phẩm này. Bạn có muốn chuyển sang trạng thái "TẠM ẨN" ngay không?`
+                                  );
+                                  if (wantHide) {
+                                    if (Number(item.status) === 1) {
+                                      handleToggle(item);
+                                    } else {
+                                      alert("ℹ️ Sản phẩm này hiện tại đã ở trạng thái Tạm ẩn rồi!");
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 rounded-md border border-gray-200 text-gray-400 bg-gray-50 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-300 cursor-pointer transition-colors"
+                                title="Sản phẩm đang có đơn hàng: KHÔNG ĐƯỢC XÓA - Chỉ được tạm ẩn"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 opacity-40" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(item)}
+                                className="p-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
+                                title="Chuyển sản phẩm vào thùng rác"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

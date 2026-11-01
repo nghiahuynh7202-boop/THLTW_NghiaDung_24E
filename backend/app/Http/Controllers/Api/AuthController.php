@@ -8,9 +8,12 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Mail\ResetPasswordOtpMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * File này làm gì: Xử lý đăng ký, đăng nhập và thông tin tài khoản bằng Laravel Sanctum.
@@ -130,6 +133,92 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Đăng xuất thành công (đã hủy token).',
+        ]);
+    }
+
+    // Gửi mã OTP khôi phục mật khẩu về Gmail của khách
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ], [
+            'email.required' => 'Vui lòng nhập địa chỉ email của bạn.',
+            'email.email'    => 'Địa chỉ email không đúng định dạng.',
+            'email.exists'   => 'Không tìm thấy tài khoản nào khớp với email này.',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        // Tạo mã OTP ngẫu nhiên 6 chữ số (VD: 849201)
+        $otp = (string) rand(100000, 999999);
+
+        // Lưu hoặc ghi đè OTP vào bảng password_reset_tokens
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token'      => $otp,
+                'created_at' => now(),
+            ]
+        );
+
+        // Gửi email chứa mã OTP
+        try {
+            Mail::to($request->email)->send(new ResetPasswordOtpMail($otp, $user->name));
+        } catch (\Throwable $e) {
+            return response()->json([
+                'message' => 'Lỗi kết nối gửi email: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'message' => 'Mã xác nhận OTP đã được gửi về Gmail của bạn. Vui lòng kiểm tra hộp thư!',
+        ]);
+    }
+
+    // Xác nhận mã OTP và đặt lại mật khẩu mới
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email'    => 'required|email|exists:users,email',
+            'otp'      => 'required|string',
+            'password' => 'required|string|min:6',
+        ], [
+            'email.required'    => 'Vui lòng nhập địa chỉ email.',
+            'otp.required'      => 'Vui lòng nhập mã xác thực OTP.',
+            'password.required' => 'Vui lòng nhập mật khẩu mới.',
+            'password.min'      => 'Mật khẩu mới phải có ít nhất 6 ký tự.',
+        ]);
+
+        // Kiểm tra OTP trong bảng password_reset_tokens
+        $tokenRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', trim($request->otp))
+            ->first();
+
+        if (! $tokenRecord) {
+            return response()->json([
+                'message' => 'Mã xác nhận OTP không chính xác!',
+            ], 422);
+        }
+
+        // Kiểm tra thời hạn 15 phút
+        if (now()->diffInMinutes($tokenRecord->created_at) > 15) {
+            return response()->json([
+                'message' => 'Mã OTP đã hết hiệu lực (quá 15 phút). Vui lòng gửi lại yêu cầu mới!',
+            ], 422);
+        }
+
+        // Cập nhật mật khẩu mới cho người dùng
+        $user = User::where('email', $request->email)->first();
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Xóa mã OTP đã sử dụng
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return response()->json([
+            'message' => 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.',
         ]);
     }
 }
