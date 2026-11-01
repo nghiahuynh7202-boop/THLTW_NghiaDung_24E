@@ -1,6 +1,25 @@
 import axiosAdmin from "@/lib/axiosAdmin";
+import axiosClient from "@/lib/axiosClient";
 
-// 1. Lấy danh sách trang đơn (trang tĩnh)
+// Lấy danh sách trang tĩnh công khai cho Frontend
+export async function getPublicPages(params = { per_page: 50 }) {
+  try {
+    const res = await axiosClient.get("/pages", { params });
+    const list = res?.data || res || [];
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    console.error("Lỗi lấy danh sách trang tĩnh:", err);
+    return [];
+  }
+}
+
+// Lấy chi tiết trang tĩnh theo slug hoặc ID
+export async function getPublicPageBySlug(slug) {
+  const res = await axiosClient.get(`/pages/${slug}`);
+  return res?.data || res;
+}
+
+// 1. Lấy danh sách trang đơn (trang tĩnh) cho Admin
 export async function getPages(params = {}) {
   const res = await axiosAdmin.get("/admin/pages", { params });
   return res;

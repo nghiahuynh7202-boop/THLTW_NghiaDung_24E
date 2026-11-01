@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
@@ -17,6 +17,8 @@ export default function ProductDetail({ product }) {
   const router = useRouter();
   const { addToCart } = useCart();
   const toast = useToast();
+
+  const [selectedQty, setSelectedQty] = useState(1); // Số lượng khách muốn mua
 
   // 1. DỮ LIỆU SẢN PHẨM: Tên, Giá gốc, Giá khuyến mãi, Số lượng kho và Ảnh
   const name = product?.name || "Khuyến mãi - Hoa Tươi Nghệ Thuật";
@@ -36,15 +38,15 @@ export default function ProductDetail({ product }) {
 
   const mainImage = getImageUrl(product?.image);
 
-  // 2. HÀM XỬ LÝ: Thêm vào giỏ hàng & Mua ngay
+  // 2. HÀM XỬ LÝ: Thêm vào giỏ hàng & Mua ngay (kèm số lượng đã chọn)
   const handleAddToCart = () => {
     if (stock <= 0) {
       toast.show("Sản phẩm hiện đã hết hàng!");
       return;
     }
-    const item = { ...product, name, price, salePrice: hasSale ? currentPrice : null, image: mainImage };
-    if (addToCart(item, 1)) {
-      toast.show(`Đã thêm "${name}" vào giỏ hàng!`);
+    const item = { ...product, name, price, salePrice: hasSale ? currentPrice : null, image: mainImage, stock };
+    if (addToCart(item, selectedQty)) {
+      toast.show(`Đã thêm ${selectedQty} "${name}" vào giỏ hàng!`);
     }
   };
 
@@ -53,8 +55,8 @@ export default function ProductDetail({ product }) {
       toast.show("Sản phẩm hiện đã hết hàng!");
       return;
     }
-    const item = { ...product, name, price, salePrice: hasSale ? currentPrice : null, image: mainImage };
-    if (addToCart(item, 1)) {
+    const item = { ...product, name, price, salePrice: hasSale ? currentPrice : null, image: mainImage, stock };
+    if (addToCart(item, selectedQty)) {
       router.push("/cart");
     }
   };
@@ -136,6 +138,36 @@ export default function ProductDetail({ product }) {
             <p className="text-gray-600 text-[11px]">
               Hiện nay, shop hỗ trợ giao nhanh hỏa tốc trong 2 giờ tại tất cả khu vực nội thành.
             </p>
+          </div>
+
+          {/* Chọn số lượng sản phẩm trước khi mua */}
+          <div className="flex items-center gap-3 pt-1">
+            <span className="text-xs font-semibold text-gray-700">Số lượng:</span>
+            <div className="flex items-center border border-gray-300 rounded">
+              <button
+                type="button"
+                onClick={() => setSelectedQty((q) => Math.max(1, q - 1))}
+                className="px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-100 cursor-pointer"
+              >
+                -
+              </button>
+              <span className="px-3 py-1 text-xs font-bold text-gray-800 min-w-8 text-center">
+                {selectedQty}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedQty((q) => Math.min(stock > 0 ? stock : 1, q + 1))}
+                disabled={selectedQty >= stock}
+                className="px-2.5 py-1 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
+              >
+                +
+              </button>
+            </div>
+            {stock > 0 && (
+              <span className="text-[11px] text-gray-400">
+                (Kho còn: <strong className="text-gray-600">{stock}</strong>)
+              </span>
+            )}
           </div>
 
           {/* Cụm 2 nút hành động: Thêm vào giỏ & Mua ngay */}

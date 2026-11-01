@@ -47,6 +47,12 @@ class Product extends Model
         return $this->hasMany(ProductSale::class, 'product_id');
     }
 
+    // Chi tiết các đơn hàng có chứa sản phẩm này
+    public function orderDetails(): HasMany
+    {
+        return $this->hasMany(OrderDetail::class, 'product_id');
+    }
+
     // Chỉ lấy sản phẩm đang bật (status = 1)
     public function scopeActive(Builder $query): void
     {

@@ -1,4 +1,11 @@
 import axiosAdmin from "@/lib/axiosAdmin";
+import axiosClient from "@/lib/axiosClient";
+
+// Kiểm tra mã giảm giá coupon khi thanh toán (Client)
+export async function checkCoupon(code, subtotal) {
+  const res = await axiosClient.post("/productsales/check-coupon", { code, subtotal });
+  return res.data || res;
+}
 
 // 1. Lấy danh sách khuyến mãi cho admin (có lọc, phân trang)
 export async function getSales(params = {}) {

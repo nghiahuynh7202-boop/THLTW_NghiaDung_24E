@@ -98,10 +98,17 @@ class OrderController extends Controller
                 'status'          => 1, // 1: Chờ xác nhận
             ]);
 
-            // 4. Tạo chi tiết đơn hàng
+            // 4. Tạo chi tiết đơn hàng & TRỪ SỐ LƯỢNG TỒN KHO CỦA SẢN PHẨM
             foreach ($detailRecords as $detail) {
                 $detail['order_id'] = $order->id;
                 OrderDetail::create($detail);
+
+                // Trừ tồn kho (qty) trong bảng products (không để âm)
+                $product = Product::find($detail['product_id']);
+                if ($product) {
+                    $product->qty = max(0, (int) $product->qty - (int) $detail['qty']);
+                    $product->save();
+                }
             }
 
             // 5. Tăng số lần sử dụng mã giảm giá nếu có
@@ -135,13 +142,25 @@ class OrderController extends Controller
             ->response();
     }
 
-    // Hủy đơn hàng (Khách hoặc Admin)
+    // Hủy đơn hàng (Chỉ cho phép hủy khi đơn ở trạng thái 1: Chờ xác nhận)
     public function cancel(Request $request, $id): JsonResponse
     {
         $order = Order::findOrFail($id);
 
-        if ($order->status >= 3 && $order->status != 5) {
-            return response()->json(['message' => 'Đơn hàng đang giao hoặc đã hoàn thành, không thể hủy.'], 422);
+        // Nếu đơn đã được xác nhận, đang đóng gói, đang giao hoặc đã giao thì không cho hủy
+        if ($order->status != 1) {
+            return response()->json([
+                'message' => 'Đơn hàng đã được xác nhận hoặc đang giao, không thể hủy.'
+            ], 422);
+        }
+
+        // Hoàn lại số lượng tồn kho cho các sản phẩm trong đơn
+        foreach ($order->details as $item) {
+            $product = Product::find($item->product_id);
+            if ($product) {
+                $product->qty = (int) $product->qty + (int) $item->qty;
+                $product->save();
+            }
         }
 
         $order->update([

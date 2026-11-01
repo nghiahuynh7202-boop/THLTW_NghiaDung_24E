@@ -9,7 +9,7 @@ export async function getProducts(params = {}) {
 
 // Lấy toàn bộ sản phẩm (tương thích các trang gọi getAllProducts)
 export async function getAllProducts(params = {}) {
-  return await getProducts(params);
+  return await getProducts({ per_page: 1000, ...params });
 }
 
 // Lấy danh mục con (tương thích admin/products/create)

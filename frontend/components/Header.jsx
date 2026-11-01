@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ShoppingBag, User, ChevronDown, Menu, X, LogOut, LogIn, UserPlus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { getPublicMenus } from "@/services/menuServices";
 
 export default function Header() {
     const router = useRouter();
@@ -61,13 +62,33 @@ export default function Header() {
         { name: "Lan hồ điệp", image: "/images/434425_lan-ho-diep.png", href: "/category/lan-ho-diep" },
         { name: "Quà tặng khác", image: "/images/434421_qua-tang-khac.png", href: "/category/qua-tang-khac" },
     ];
-    const navMenuItems = [
+    const DEFAULT_MENUS = [
         { label: "TRANG CHỦ", href: "/" },
-        { label: "GIỚI THIỆU", href: "/about" },
+        { label: "GIỚI THIỆU", href: "/pages/gioi-thieu" },
         { label: "SẢN PHẨM", href: "/products" },
         { label: "BÀI VIẾT", href: "/posts" },
         { label: "LIÊN HỆ", href: "/contact" },
     ];
+    const [navMenuItems, setNavMenuItems] = useState(DEFAULT_MENUS);
+
+    // Lấy dữ liệu menu trực tiếp từ Quản lý Menu (Database)
+    useEffect(() => {
+        getPublicMenus()
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    const sorted = [...data].sort((a, b) => Number(a.order_num || 0) - Number(b.order_num || 0));
+                    setNavMenuItems(
+                        sorted.map((item) => ({
+                            label: (item.name || "").toUpperCase(),
+                            href: item.link || "/",
+                        }))
+                    );
+                }
+            })
+            .catch((err) => {
+                console.error("Lỗi lấy danh sách menu:", err);
+            });
+    }, []);
     const handleSearch = (e) => {
         e.preventDefault();
         if (searchQuery.trim()) {

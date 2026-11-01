@@ -18,7 +18,7 @@ class PostController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $query = Post::with(['topic', 'user'])->latest('id');
+        $query = Post::with(['topic', 'user'])->orderByDesc('created_at')->orderByDesc('id');
 
         if (! $request->is('api/admin/*')) {
             $query->active();

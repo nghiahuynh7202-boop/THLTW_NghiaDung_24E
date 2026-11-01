@@ -23,7 +23,12 @@ export default function HomePosts() {
         setLoading(true);
         // Lấy đúng 3 bài viết để dàn đều trên 1 hàng ngang 3 cột
         const data = await getPublicPosts({ per_page: 3 });
-        setPosts(Array.isArray(data) ? data.slice(0, 3) : []);
+        const list = Array.isArray(data) ? data : [];
+        // Sắp xếp bài viết mới nhất theo thời gian (created_at) lên đầu
+        const sorted = [...list].sort(
+          (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        );
+        setPosts(sorted.slice(0, 3));
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu tin tức từ CSDL:", error);
       } finally {

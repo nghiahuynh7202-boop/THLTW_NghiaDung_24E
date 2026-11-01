@@ -23,7 +23,7 @@ class MenuController extends Controller
             $query->active();
         }
 
-        $perPage = (int) $request->input('per_page', 12);
+        $perPage = (int) $request->input('per_page', 50);
         $menus = $query->paginate($perPage);
 
         return MenuResource::collection($menus);

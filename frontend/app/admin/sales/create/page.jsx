@@ -10,21 +10,23 @@ export default function CreateSalePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
-  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-
-  const [form, setForm] = useState({
-    name: "",
-    code: "",
-    apply_to: "order",
-    discount_type: "percent",
-    discount_value: "",
-    max_discount: "",
-    min_order: "0",
-    usage_limit: "100",
-    date_begin: today,
-    date_end: nextMonth,
-    status: 1,
+  const [form, setForm] = useState(() => {
+    const now = new Date();
+    const today = now.toISOString().slice(0, 10);
+    const nextMonth = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    return {
+      name: "",
+      code: "",
+      apply_to: "order",
+      discount_type: "percent",
+      discount_value: "",
+      max_discount: "",
+      min_order: "0",
+      usage_limit: "100",
+      date_begin: today,
+      date_end: nextMonth,
+      status: 1,
+    };
   });
 
   const handleSubmit = async (e) => {

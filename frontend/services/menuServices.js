@@ -1,8 +1,21 @@
+import axiosClient from "@/lib/axiosClient";
 import axiosAdmin from "@/lib/axiosAdmin";
 
 const ADMIN = "/admin/menus";
 
-// 1. Lấy danh sách menu
+// Lấy danh sách menu công khai cho frontend
+export async function getPublicMenus(params = { per_page: 50 }) {
+  try {
+    const res = await axiosClient.get("/menus", { params });
+    const list = res?.data || res || [];
+    return Array.isArray(list) ? list : [];
+  } catch (err) {
+    console.error("Lỗi lấy danh sách menu:", err);
+    return [];
+  }
+}
+
+// 1. Lấy danh sách menu quản trị (Admin)
 export async function getMenus(params = {}) {
   const res = await axiosAdmin.get(ADMIN, { params });
   const list = res?.data?.data || res?.data || res || [];

@@ -1,7 +1,8 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getPublicPages } from "@/services/pageServices";
 // SVG Icons cho mạng xã hội và tiện ích để không bị phụ thuộc phiên bản thư viện
 function FacebookIcon({ className = "w-4 h-4" }) {
   return (
@@ -100,21 +101,44 @@ export default function Footer() {
     };
   }, []);
 
-  const customerCareLinks = [
+  const [dynamicPages, setDynamicPages] = useState([]);
+
+  // Tải danh sách trang tĩnh từ CSDL
+  useEffect(() => {
+    getPublicPages({ per_page: 50 })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setDynamicPages(data);
+        }
+      })
+      .catch((err) => console.error("Lỗi tải trang tĩnh footer:", err));
+  }, []);
+
+  const DEFAULT_CUSTOMER_CARE_LINKS = [
     { name: "Giới Thiệu", href: "/pages/gioi-thieu" },
     { name: "Liên Hệ", href: "/contact" },
+    { name: "Chính Sách Đổi Trả", href: "/pages/chinh-sach-doi-tra" },
+    { name: "Hướng Dẫn Mua Hàng", href: "/pages/huong-dan-mua-hang" },
     { name: "Chính Sách Vận Chuyển", href: "/pages/chinh-sach-van-chuyen" },
-    { name: "Câu Hỏi Thường Gặp", href: "/pages/cau-hoi-thuong-gap" },
+    { name: "Chính Sách Hoàn Tiền", href: "/pages/chinh-sach-hoan-tien" },
     { name: "Hình Thức Thanh Toán", href: "/pages/hinh-thuc-thanh-toan" },
     { name: "Bảo Mật Thông Tin", href: "/pages/bao-mat-thong-tin" },
-    { name: "Chính Sách Hoàn Tiền", href: "/pages/chinh-sach-hoan-tien" },
-    { name: "Xử Lý Khiếu Nại", href: "/pages/xu-ly-khieu-nai" },
-    {
-      name: "Tại Sao Nên Chọn FlowerCorner.vn",
-      href: "/pages/tai-sao-chon-chung-toi",
-    },
-    { name: "Blog", href: "/blog" },
+    { name: "Câu Hỏi Thường Gặp", href: "/pages/cau-hoi-thuong-gap" },
   ];
+
+  const customerCareLinks = useMemo(() => {
+    if (dynamicPages.length > 0) {
+      const pageLinks = dynamicPages.map((p) => ({
+        name: p.title,
+        href: `/pages/${p.slug}`,
+      }));
+      return [
+        { name: "Liên Hệ", href: "/contact" },
+        ...pageLinks,
+      ];
+    }
+    return DEFAULT_CUSTOMER_CARE_LINKS;
+  }, [dynamicPages]);
   const socialLinks = [
     {
       name: "Facebook",

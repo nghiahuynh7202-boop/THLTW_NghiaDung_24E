@@ -51,7 +51,11 @@ export default function PostsPage() {
         setLoading(true);
         // Gọi API lấy bài viết từ MySQL
         const data = await getPublicPosts({ per_page: 20 });
-        setPosts(Array.isArray(data) ? data : []);
+        const list = Array.isArray(data) ? data : [];
+        const sorted = [...list].sort(
+          (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        );
+        setPosts(sorted);
       } catch (err) {
         console.error("Lỗi khi kết nối API CSDL bài viết:", err);
       } finally {

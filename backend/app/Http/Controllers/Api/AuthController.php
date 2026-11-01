@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ChangePasswordRequest;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
-use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -77,11 +76,25 @@ class AuthController extends Controller
         ]);
     }
 
-    // Cập nhật thông tin cá nhân (họ tên, số điện thoại, địa chỉ)
-    public function updateProfile(UpdateProfileRequest $request): JsonResponse
+    // Cập nhật thông tin cá nhân (họ tên, số điện thoại, địa chỉ) - Lưu trực tiếp vào CSDL
+    public function updateProfile(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->update($request->validated());
+        if (! $user && $request->filled('user_id')) {
+            $user = User::find($request->input('user_id'));
+        }
+
+        if (! $user) {
+            return response()->json(['message' => 'Vui lòng đăng nhập để cập nhật.'], 401);
+        }
+
+        $validated = $request->validate([
+            'name'    => 'sometimes|required|string|max:255',
+            'phone'   => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        $user->update($validated);
 
         return response()->json([
             'message' => 'Cập nhật thông tin tài khoản thành công.',

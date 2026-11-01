@@ -1,4 +1,13 @@
 import axiosAdmin from "@/lib/axiosAdmin";
+import axiosClient from "@/lib/axiosClient";
+
+// Gửi form liên hệ từ khách hàng (Client)
+export async function sendContact(data) {
+  const res = await axiosClient.post("/contacts", data);
+  return res.data || res;
+}
+
+export const createContact = sendContact;
 
 // 1. Lấy danh sách liên hệ (hỗ trợ phân trang, lọc trạng thái, tìm kiếm)
 export async function getContacts(params = {}) {
