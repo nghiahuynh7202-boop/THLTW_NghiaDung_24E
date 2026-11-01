@@ -75,6 +75,11 @@ Route::post('/orders', [OrderController::class, 'store']);
 Route::get('/orders/{id}', [OrderController::class, 'show']);
 Route::patch('/orders/{id}/cancel', [OrderController::class, 'cancel']);
 
+// SePay Tự Động & Kiểm tra thanh toán ngân hàng
+Route::post('/sepay/webhook', [\App\Http\Controllers\Api\SepayController::class, 'webhook']);
+Route::post('/sepay/mock-payment/{id}', [\App\Http\Controllers\Api\SepayController::class, 'mockPayment']);
+Route::get('/orders/{id}/check-payment', [\App\Http\Controllers\Api\SepayController::class, 'checkPayment']);
+
 // Khuyến mãi & Kiểm tra mã giảm giá (Product Sales & Coupons - Client)
 Route::get('/productsales', [ProductSaleController::class, 'index']);
 Route::get('/productsales/{id}', [ProductSaleController::class, 'show']);
@@ -100,12 +105,14 @@ Route::prefix('admin')->group(function () {
     Route::get('categories/trash', [CategoryController::class, 'trash']);
     Route::patch('categories/{id}/restore', [CategoryController::class, 'restore']);
     Route::delete('categories/{id}/force', [CategoryController::class, 'forceDelete']);
+    Route::post('categories/{id}', [CategoryController::class, 'update']);
     Route::apiResource('categories', CategoryController::class);
 
     // 4. Banners
     Route::get('banners/trash', [BannerController::class, 'trash']);
     Route::patch('banners/{id}/restore', [BannerController::class, 'restore']);
     Route::delete('banners/{id}/force', [BannerController::class, 'forceDelete']);
+    Route::post('banners/{id}', [BannerController::class, 'update']);
     Route::apiResource('banners', BannerController::class);
 
     // 5. Menus
@@ -115,6 +122,8 @@ Route::prefix('admin')->group(function () {
     Route::apiResource('menus', MenuController::class);
 
     // 6. Quản lý người dùng (Users)
+    Route::patch('users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+    Route::get('users/{id}/orders', [UserController::class, 'orders']);
     Route::get('users/trash', [UserController::class, 'trash']);
     Route::patch('users/{id}/restore', [UserController::class, 'restore']);
     Route::delete('users/{id}/force', [UserController::class, 'forceDelete']);
@@ -124,12 +133,14 @@ Route::prefix('admin')->group(function () {
     Route::get('contacts/trash', [ContactController::class, 'trash']);
     Route::patch('contacts/{id}/restore', [ContactController::class, 'restore']);
     Route::delete('contacts/{id}/force', [ContactController::class, 'forceDelete']);
+    Route::post('contacts/{id}', [ContactController::class, 'update']);
     Route::apiResource('contacts', ContactController::class);
 
     // 8. Chủ đề bài viết (Post Topics)
     Route::get('post-topics/trash', [PostTopicController::class, 'trash']);
     Route::patch('post-topics/{id}/restore', [PostTopicController::class, 'restore']);
     Route::delete('post-topics/{id}/force', [PostTopicController::class, 'forceDelete']);
+    Route::post('post-topics/{id}', [PostTopicController::class, 'update']);
     Route::apiResource('post-topics', PostTopicController::class);
 
     // 9. Bài viết (Posts)
@@ -142,12 +153,14 @@ Route::prefix('admin')->group(function () {
     Route::get('pages/trash', [PageController::class, 'trash']);
     Route::patch('pages/{id}/restore', [PageController::class, 'restore']);
     Route::delete('pages/{id}/force', [PageController::class, 'forceDelete']);
+    Route::post('pages/{id}', [PageController::class, 'update']);
     Route::apiResource('pages', PageController::class);
 
     // 11. Nhà cung cấp (Suppliers)
     Route::get('suppliers/trash', [SupplierController::class, 'trash']);
     Route::patch('suppliers/{id}/restore', [SupplierController::class, 'restore']);
     Route::delete('suppliers/{id}/force', [SupplierController::class, 'forceDelete']);
+    Route::post('suppliers/{id}', [SupplierController::class, 'update']);
     Route::apiResource('suppliers', SupplierController::class);
 
     // 12. Phiếu nhập/xuất kho (Stock Documents)
@@ -169,5 +182,9 @@ Route::prefix('admin')->group(function () {
     Route::delete('orders/{order}', [OrderController::class, 'destroy']);
 
     // 15. Khuyến mãi / Mã giảm giá (Product Sales - Admin)
+    Route::get('productsales/trash', [ProductSaleController::class, 'trash']);
+    Route::patch('productsales/{id}/restore', [ProductSaleController::class, 'restore']);
+    Route::delete('productsales/{id}/force', [ProductSaleController::class, 'forceDelete']);
+    Route::post('productsales/{id}', [ProductSaleController::class, 'update']);
     Route::apiResource('productsales', ProductSaleController::class);
 });

@@ -60,10 +60,11 @@ class BannerController extends Controller
     }
 
     /**
-     * PUT|PATCH /api/admin/banners/{banner}
+     * PUT|PATCH|POST /api/admin/banners/{banner}
      */
-    public function update(BannerRequest $request, Banner $banner): JsonResponse
+    public function update(BannerRequest $request, $banner): JsonResponse
     {
+        $banner = $banner instanceof Banner ? $banner : Banner::findOrFail($banner);
         $data = $request->validated();
 
         if ($request->hasFile('image')) {
@@ -83,18 +84,59 @@ class BannerController extends Controller
     }
 
     /**
-     * DELETE /api/admin/banners/{banner}
+     * DELETE /api/admin/banners/{banner} — Xóa tạm banner (vào thùng rác)
      */
-    public function destroy(Banner $banner): JsonResponse
+    public function destroy($id): JsonResponse
     {
+        $banner = Banner::findOrFail($id);
+        $banner->delete();
+
+        return response()->json([
+            'message' => 'Đã chuyển banner vào thùng rác thành công.',
+        ]);
+    }
+
+    /**
+     * GET /api/admin/banners/trash — Danh sách banner trong thùng rác
+     */
+    public function trash(Request $request): AnonymousResourceCollection
+    {
+        $perPage = (int) $request->input('per_page', 50);
+        $banners = Banner::onlyTrashed()
+            ->latest('deleted_at')
+            ->paginate($perPage);
+
+        return BannerResource::collection($banners);
+    }
+
+    /**
+     * PATCH /api/admin/banners/{id}/restore — Khôi phục banner từ thùng rác
+     */
+    public function restore($id): JsonResponse
+    {
+        $banner = Banner::onlyTrashed()->findOrFail($id);
+        $banner->restore();
+
+        return (new BannerResource($banner))
+            ->additional(['message' => 'Khôi phục banner thành công.'])
+            ->response();
+    }
+
+    /**
+     * DELETE /api/admin/banners/{id}/force — Xóa vĩnh viễn banner khỏi CSDL
+     */
+    public function forceDelete($id): JsonResponse
+    {
+        $banner = Banner::withTrashed()->findOrFail($id);
+
         if ($banner->image && ! str_starts_with($banner->image, 'http')) {
             Storage::disk('public')->delete($banner->image);
         }
 
-        $banner->delete();
+        $banner->forceDelete();
 
         return response()->json([
-            'message' => 'Xóa banner thành công.',
+            'message' => 'Xóa vĩnh viễn banner thành công.',
         ]);
     }
 }

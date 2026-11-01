@@ -21,6 +21,7 @@ function EditProductContent() {
         status: "1",
         sale: "0",
         sale_price: "",
+        is_featured: "0",
     });
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:8000";
     useEffect(() => {
@@ -76,6 +77,7 @@ function EditProductContent() {
                     status: String(p.status ?? "1"),
                     sale: p.sale_price && Number(p.sale_price) > 0 ? "1" : "0",
                     sale_price: p.sale_price && Number(p.sale_price) > 0 ? String(p.sale_price) : "",
+                    is_featured: String(p.is_featured ?? "0"),
                 });
                 if (p.image) {
                     const imgUrl = String(p.image).startsWith("http")
@@ -156,6 +158,7 @@ function EditProductContent() {
             formData.append("qty", form.qty || "0");
             formData.append("description", form.description || "");
             formData.append("status", form.status);
+            formData.append("is_featured", form.is_featured || "0");
             formData.append("is_on_sale", form.sale);
             if (form.sale === "1" && form.sale_price) {
                 formData.append("sale_price", form.sale_price);
@@ -247,6 +250,19 @@ function EditProductContent() {
                                         <label className="block text-xs font-bold text-gray-500 mb-1 uppercase">Giá sau giảm (đ)</label>
                                         <input type="number" name="sale_price" value={form.sale_price} onChange={handleChange} placeholder="Nhập giá đã giảm..." className="w-full h-12 rounded-xl border border-gray-200 bg-white px-4 outline-none focus:border-blue-500"/>
                                     </div>)}
+                            </div>
+
+                            {/* CHỨC NĂNG SẢN PHẨM NỔI BẬT: Admin cập nhật bật/tắt `is_featured` */}
+                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                <label className="inline-flex items-center gap-3 text-[15px] font-semibold text-gray-700 cursor-pointer">
+                                    <input type="checkbox" name="is_featured" checked={form.is_featured === "1"} onChange={handleChange} className="h-5 w-5 rounded accent-blue-600 cursor-pointer"/>
+                                    Sản phẩm nổi bật
+                                </label>
+                                {form.is_featured === "1" && (
+                                    <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                                        ⭐ Nổi bật
+                                    </span>
+                                )}
                             </div>
 
                             <div>

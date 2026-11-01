@@ -2,61 +2,104 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getCategories } from "@/services/categoryServices";
+import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
+import { getPublicCategories, getCategories } from "@/services/categoryServices";
+
+// Chuẩn hóa link ảnh để hiển thị ảnh từ backend
+const getValidImageUrl = (img) => {
+  if (!img || typeof img !== "string" || img.trim() === "") return "";
+  const trimmed = img.trim();
+  if (trimmed.startsWith("blob:") || trimmed.startsWith("data:")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/") && !trimmed.startsWith("/storage/")) return trimmed;
+
+  // Lấy hostname hiện tại để ảnh luôn load đúng cổng backend 8000
+  const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
+  const storageMatch = trimmed.match(/\/storage\/(.+)$/);
+  if (storageMatch) {
+    return `http://${hostname}:8000/storage/${storageMatch[1]}`;
+  }
+  const cleanPath = trimmed.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+  return `http://${hostname}:8000/storage/${cleanPath}`;
+};
+
+function CategoryThumb({ img, name }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [img]);
+
+  const src = getValidImageUrl(img);
+
+  if (!img || hasError || !src) {
+    return (
+      <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <ImageIcon className="w-8 h-8 text-gray-300" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name}
+      onError={() => setHasError(true)}
+      className="w-full h-full object-cover rounded-full group-hover/item:scale-105 transition-transform duration-200"
+    />
+  );
+}
 
 export default function CategorySlider() {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
-
-  // Danh mục mặc định đẹp mắt khi chưa có dữ liệu hoặc backend trống
-  const defaultCategories = [
-    { id: 1, name: "HOA SINH NHẬT", slug: "hoa-sinh-nhat", image: "/images/hoa.jpg" },
-    { id: 2, name: "HOA TÌNH YÊU", slug: "hoa-tinh-yeu", image: "/images/hoa.jpg" },
-    { id: 3, name: "HOA KHAI TRƯƠNG", slug: "hoa-khai-truong", image: "/images/hoa.jpg" },
-    { id: 4, name: "HOA TỐT NGHIỆP", slug: "hoa-tot-nghiep", image: "/images/hoa.jpg" },
-    { id: 5, name: "HOA CHIA BUỒN", slug: "hoa-chia-buon", image: "/images/hoa.jpg" },
-    { id: 6, name: "HOA THEO YÊU CẦU", slug: "hoa-theo-yeu-cau", image: "/images/hoa.jpg" },
-    { id: 7, name: "LAN HỒ ĐIỆP", slug: "lan-ho-diep", image: "/images/hoa.jpg" },
-    { id: 8, name: "BÓ HOA TƯƠI", slug: "bo-hoa-tuoi", image: "/images/hoa.jpg" },
-  ];
-
-  const [categories, setCategories] = useState(defaultCategories);
-
-  // Chuẩn hóa link ảnh để không bao giờ bị lỗi icon ảnh vỡ
-  const getValidImageUrl = (img) => {
-    if (!img || typeof img !== "string" || img.trim() === "") return "/images/hoa.jpg";
-    const trimmed = img.trim();
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-    if (trimmed.startsWith("/")) return trimmed;
-    return `/images/${trimmed}`;
-  };
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchApiCategories = async () => {
       try {
-        const res = await getCategories();
-        let list = [];
-        if (Array.isArray(res)) list = res;
-        else if (Array.isArray(res?.data)) list = res.data;
-        else if (Array.isArray(res?.data?.data)) list = res.data.data;
-        else if (Array.isArray(res?.categories)) list = res.categories;
+        setLoading(true);
+        // 1. Gọi API công khai danh mục thật từ SQL database
+        let list = await getPublicCategories();
 
-        if (list.length > 0) {
+        // 2. Nếu danh sách rỗng, thử gọi API getCategories
+        if (!Array.isArray(list) || list.length === 0) {
+          const res = await getCategories();
+          if (Array.isArray(res)) list = res;
+          else if (Array.isArray(res?.data?.data)) list = res.data.data;
+          else if (Array.isArray(res?.data)) list = res.data;
+          else if (Array.isArray(res?.categories)) list = res.categories;
+        }
+
+        if (!isMounted) return;
+
+        if (Array.isArray(list) && list.length > 0) {
           const merged = list.map((c, idx) => ({
             id: c.id || idx + 1,
             name: c.name || c.title || "Danh mục",
             slug: c.slug || `danh-muc-${c.id || idx}`,
-            image: c.image || "/images/hoa.jpg",
+            image: c.image || null,
           }));
           setCategories(merged);
+        } else {
+          setCategories([]);
         }
-      } catch {
-        // Giữ defaultCategories nếu lỗi kết nối
+      } catch (err) {
+        console.error("Lỗi lấy danh mục từ SQL:", err);
+        if (isMounted) setCategories([]);
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
-    fetchApiCategories();
+    void fetchApiCategories();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const checkScroll = () => {
@@ -116,33 +159,38 @@ export default function CategorySlider() {
         onScroll={checkScroll}
         className="flex items-start gap-6 sm:gap-8 md:gap-10 overflow-x-auto scroll-smooth no-scrollbar py-2 px-2"
       >
-        <div className="flex items-start gap-6 sm:gap-8 md:gap-10 min-w-max mx-auto">
-          {categories.map((cat, idx) => (
-            <Link
-              key={cat.id || idx}
-              href={`/search?q=${encodeURIComponent(cat.name)}`}
-              className="flex flex-col items-center flex-shrink-0 group/item cursor-pointer w-28 sm:w-32 md:w-36 text-center"
-            >
-              {/* Vòng tròn ảnh to, viền đơn giản thanh lịch (không màu mè) */}
-              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full border-2 border-gray-200 hover:border-[#f68b1f] shadow-xs hover:shadow-md transition-all duration-200 p-1 bg-white flex items-center justify-center overflow-hidden">
-                <img
-                  src={getValidImageUrl(cat.image)}
-                  alt={cat.name}
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = "/images/hoa.jpg";
-                  }}
-                  className="w-full h-full object-cover rounded-full group-hover/item:scale-105 transition-transform duration-200"
-                />
+        {loading ? (
+          <div className="flex items-start gap-6 sm:gap-8 md:gap-10 min-w-max mx-auto animate-pulse">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="flex flex-col items-center flex-shrink-0 w-28 sm:w-32 md:w-36 text-center">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gray-100 border-2 border-gray-100 p-1 flex items-center justify-center">
+                  <div className="w-full h-full rounded-full bg-gray-200" />
+                </div>
+                <div className="h-3.5 bg-gray-200 rounded-md w-20 mt-3" />
               </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-start gap-6 sm:gap-8 md:gap-10 min-w-max mx-auto">
+            {categories.map((cat, idx) => (
+              <Link
+                key={cat.id || idx}
+                href={cat.slug ? `/products?category=${encodeURIComponent(cat.slug)}` : `/products?q=${encodeURIComponent(cat.name)}`}
+                className="flex flex-col items-center flex-shrink-0 group/item cursor-pointer w-28 sm:w-32 md:w-36 text-center"
+              >
+                {/* Vòng tròn ảnh to, viền đơn giản thanh lịch (không màu mè) */}
+                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full border-2 border-gray-200 hover:border-[#f68b1f] shadow-xs hover:shadow-md transition-all duration-200 p-1 bg-white flex items-center justify-center overflow-hidden">
+                  <CategoryThumb img={cat.image} name={cat.name} />
+                </div>
 
-              {/* Tên danh mục to rõ, đều chữ */}
-              <span className="text-xs sm:text-[13px] font-bold text-gray-800 text-center uppercase tracking-tight group-hover/item:text-[#f68b1f] transition-colors mt-3 max-w-[120px] line-clamp-2 leading-tight">
-                {cat.name}
-              </span>
-            </Link>
-          ))}
-        </div>
+                {/* Tên danh mục to rõ, đều chữ */}
+                <span className="text-xs sm:text-[13px] font-bold text-gray-800 text-center uppercase tracking-tight group-hover/item:text-[#f68b1f] transition-colors mt-3 max-w-[120px] line-clamp-2 leading-tight">
+                  {cat.name}
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

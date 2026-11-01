@@ -16,8 +16,9 @@ class BannerRequest extends FormRequest
 
     public function rules(): array
     {
-        $bannerId = $this->route('banner') ? ($this->route('banner')->id ?? $this->route('banner')) : null;
-        $isCreate = $this->isMethod('post');
+        $bannerRoute = $this->route('banner') ?? $this->route('id');
+        $bannerId = is_object($bannerRoute) ? ($bannerRoute->id ?? null) : $bannerRoute;
+        $isCreate = empty($bannerId);
 
         return [
             'image'     => [
@@ -25,12 +26,12 @@ class BannerRequest extends FormRequest
                 'image',
                 'mimes:jpeg,png,jpg,webp,gif',
                 'max:2048',
+                new \App\Rules\UniqueImage('banners', 'image', $bannerId),
             ],
             'link'      => [
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('banners', 'link')->ignore($bannerId),
             ],
             'order_num' => ['nullable', 'integer', 'min:0'],
             'status'    => ['nullable', 'integer', 'in:0,1'],
@@ -45,7 +46,6 @@ class BannerRequest extends FormRequest
             'image.mimes'       => 'Hình ảnh phải có định dạng: jpeg, png, jpg, webp, gif.',
             'image.max'         => 'Dung lượng hình ảnh không được vượt quá 2MB.',
             'link.max'          => 'Đường dẫn liên kết không vượt quá 255 ký tự.',
-            'link.unique'       => 'Đường dẫn liên kết banner đã tồn tại, vui lòng chọn đường dẫn khác.',
             'order_num.integer' => 'Thứ tự hiển thị phải là số nguyên.',
             'order_num.min'     => 'Thứ tự hiển thị không được nhỏ hơn 0.',
             'status.in'         => 'Trạng thái chỉ nhận giá trị 0 (ẩn) hoặc 1 (hiển thị).',

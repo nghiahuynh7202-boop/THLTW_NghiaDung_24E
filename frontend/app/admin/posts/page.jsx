@@ -2,13 +2,11 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Pagination from "@/components/shop/ui/Pagination";
 import { getAdminPosts, deletePost } from "@/services/postServices";
-import { RefreshCw, Trash2, Plus, Edit2, FileText, Image as ImageIcon } from "lucide-react";
+import { Trash2, Plus, Edit2, FileText, Image as ImageIcon, Search } from "lucide-react";
 
-const ITEMS_PER_PAGE = 6;
+const ITEMS_PER_PAGE = 7;
 
-// Component hiển thị thumbnail bài viết
 function PostImage({ item }) {
   const [hasError, setHasError] = useState(false);
   const image = item.image ? String(item.image).trim() : "";
@@ -25,14 +23,14 @@ function PostImage({ item }) {
 
   if (!image || hasError) {
     return (
-      <div className="w-12 h-12 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400">
-        <ImageIcon className="w-5 h-5 text-gray-300" />
+      <div className="w-10 h-10 rounded-lg border border-gray-200 bg-gray-50 flex items-center justify-center text-gray-400 mx-auto">
+        <ImageIcon className="w-4 h-4 text-gray-300" />
       </div>
     );
   }
 
   return (
-    <div className="w-12 h-12 rounded-lg border border-gray-200 overflow-hidden bg-white shrink-0 flex items-center justify-center">
+    <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-white shrink-0 mx-auto flex items-center justify-center">
       <img
         src={getImageUrl(image)}
         alt={item.title || "Bài viết"}
@@ -64,6 +62,8 @@ function PostContent() {
   const refresh = searchParams.get("refresh");
 
   const [posts, setPosts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -84,21 +84,34 @@ function PostContent() {
     void fetchPosts();
   }, [refresh, fetchPosts]);
 
-  const pageCount = Math.max(1, Math.ceil(posts.length / ITEMS_PER_PAGE));
+  const filteredPosts = useMemo(() => {
+    return posts.filter((p) => {
+      if (statusFilter !== "all" && String(p.status) !== String(statusFilter)) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchTitle = p.title?.toLowerCase().includes(term);
+        const matchSlug = p.slug?.toLowerCase().includes(term);
+        const matchTopic = p.topic?.name?.toLowerCase().includes(term);
+        return matchTitle || matchSlug || matchTopic;
+      }
+      return true;
+    });
+  }, [posts, statusFilter, searchTerm]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredPosts.length / ITEMS_PER_PAGE));
   const currentPosts = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return posts.slice(start, start + ITEMS_PER_PAGE);
-  }, [posts, currentPage]);
+    return filteredPosts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPosts, currentPage]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn chắc chắn muốn chuyển bài viết này vào thùng rác?")) return;
     try {
       await deletePost(id);
       alert("✅ Đã chuyển bài viết vào thùng rác!");
-      const remaining = posts.filter((p) => String(p.id) !== String(id));
-      setPosts(remaining);
-      const newPageCount = Math.max(1, Math.ceil(remaining.length / ITEMS_PER_PAGE));
-      if (currentPage > newPageCount) setCurrentPage(newPageCount);
+      setPosts((prev) => prev.filter((p) => String(p.id) !== String(id)));
     } catch (err) {
       const msg = err?.response?.data?.message || err?.message || "Xóa thất bại";
       alert("❌ " + msg);
@@ -122,7 +135,6 @@ function PostContent() {
 
           {/* Các nút hành động */}
           <div className="flex items-center gap-2 flex-wrap">
-
             <button
               onClick={() => router.push("/admin/posts/trash")}
               className="inline-flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 px-3.5 py-2 rounded-lg text-xs font-medium transition shadow-2xs cursor-pointer"
@@ -144,12 +156,43 @@ function PostContent() {
         {/* Khung Card chính */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
           {/* Thanh tiêu đề con */}
-          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex items-center justify-between">
+          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-800">Danh sách bài viết</span>
               <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {posts.length}
+                {filteredPosts.length}
               </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Ô tìm kiếm */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Tìm tiêu đề, chủ đề..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] w-48 sm:w-56"
+                />
+              </div>
+
+              {/* Lọc trạng thái */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] bg-white text-gray-600"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Đã ẩn</option>
+              </select>
             </div>
           </div>
 
@@ -159,7 +202,7 @@ function PostContent() {
               <thead>
                 <tr className="bg-gray-50/70 border-b border-gray-200 text-gray-600 font-semibold uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4 w-14 text-center">STT</th>
-                  <th className="py-3 px-4 w-16 text-center">Ảnh</th>
+                  <th className="py-3 px-4 w-16 text-center">Hình ảnh</th>
                   <th className="py-3 px-4">Tiêu đề bài viết</th>
                   <th className="py-3 px-4">Chủ đề</th>
                   <th className="py-3 px-4 text-center">Trạng thái</th>
@@ -182,34 +225,34 @@ function PostContent() {
                     return (
                       <tr key={item.id || index} className="hover:bg-orange-50/20 transition-colors">
                         {/* STT */}
-                        <td className="py-3 px-4 text-center text-gray-500 font-medium">
+                        <td className="py-3.5 px-4 text-center text-gray-500 font-medium">
                           {(currentPage - 1) * ITEMS_PER_PAGE + index + 1}
                         </td>
 
                         {/* Ảnh */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           <PostImage item={item} />
                         </td>
 
                         {/* Tiêu đề + slug */}
-                        <td className="py-3 px-4">
-                          <div className="font-semibold text-gray-800 text-xs line-clamp-1 max-w-sm">
+                        <td className="py-3.5 px-4">
+                          <span className="font-semibold text-gray-800 text-xs block line-clamp-1 max-w-sm">
                             {item.title || "Không có tiêu đề"}
-                          </div>
-                          <span className="text-[10px] font-mono text-gray-400 line-clamp-1 max-w-sm">
+                          </span>
+                          <span className="text-[11px] font-mono text-gray-500 bg-gray-100/80 px-2 py-0.5 rounded inline-block mt-1">
                             {item.slug || "-"}
                           </span>
                         </td>
 
                         {/* Chủ đề */}
-                        <td className="py-3 px-4">
-                          <span className="inline-block bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[11px] font-medium">
+                        <td className="py-3.5 px-4">
+                          <span className="text-xs text-gray-600">
                             {item.topic?.name || "Chung"}
                           </span>
                         </td>
 
                         {/* Trạng thái */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           {Number(item.status) === 1 ? (
                             <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-[11px] font-medium">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -224,12 +267,12 @@ function PostContent() {
                         </td>
 
                         {/* Ngày tạo */}
-                        <td className="py-3 px-4 text-center text-gray-500 text-[11px]">
+                        <td className="py-3.5 px-4 text-center text-gray-500 text-[11px]">
                           {formatDate(item.created_at)}
                         </td>
 
                         {/* Hành động */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center">
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               onClick={() => router.push(`/admin/posts/update?id=${item.id}`)}
@@ -264,12 +307,34 @@ function PostContent() {
 
           {/* Phân trang */}
           {pageCount > 1 && (
-            <div className="bg-gray-50/50 border-t border-gray-100 px-5 py-3">
-              <Pagination
-                currentPage={currentPage}
-                pageCount={pageCount}
-                onPageChange={setCurrentPage}
-              />
+            <div className="bg-gray-50/50 border-t border-gray-100 px-5 py-3 flex justify-center items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => p - 1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-white disabled:opacity-40 cursor-pointer"
+              >
+                Trước
+              </button>
+              {Array.from({ length: pageCount }).map((_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`w-8 h-8 rounded-md text-xs font-medium cursor-pointer transition ${
+                    currentPage === i + 1
+                      ? "bg-[#f68b1f] text-white"
+                      : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={currentPage === pageCount}
+                className="px-3 py-1.5 border border-gray-200 rounded-md text-xs text-gray-600 hover:bg-white disabled:opacity-40 cursor-pointer"
+              >
+                Sau
+              </button>
             </div>
           )}
         </div>

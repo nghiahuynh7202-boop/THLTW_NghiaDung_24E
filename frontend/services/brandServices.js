@@ -3,92 +3,62 @@ import axiosAdmin from "@/lib/axiosAdmin";
 
 const ADMIN = "/admin/brands";
 
-function extractList(res) {
-    if (Array.isArray(res)) return res;
-    if (Array.isArray(res?.data)) return res.data;
-    if (Array.isArray(res?.data?.data)) return res.data.data;
-    if (Array.isArray(res?.brands)) return res.brands;
-    return [];
-}
-
-function extractItem(res) {
-    return res?.data?.data ?? res?.data ?? res ?? null;
-}
-
-/* ---------- CLIENT (axiosClient) ---------- */
 export async function getBrands(params = {}) {
-    const res = await axiosClient.get("/brands", { params });
-    return extractList(res);
+  const res = await axiosClient.get("/brands", { params });
+  return res.data || res || [];
 }
 
 export const getActiveBrands = getBrands;
 
 export async function getBrand(id) {
-    const res = await axiosClient.get(`/brands/${id}`);
-    return extractItem(res);
+  const res = await axiosClient.get(`/brands/${id}`);
+  return res.data || res;
 }
 
-/* ---------- ADMIN (axiosAdmin) ---------- */
 export async function getAdminBrands(params = {}) {
-    const res = await axiosAdmin.get(ADMIN, { params });
-    return { data: extractList(res), meta: res?.meta };
+  const res = await axiosAdmin.get(ADMIN, { params });
+  return { data: res.data || res, meta: res.meta || null };
 }
 
 export async function getBrandById(id) {
-    try {
-        const res = await axiosAdmin.get(`${ADMIN}/${id}`);
-        return extractItem(res);
-    } catch {
-        const fallback = await axiosClient.get(`/brands/${id}`);
-        return extractItem(fallback);
-    }
+  const res = await axiosAdmin.get(`${ADMIN}/${id}`);
+  return res.data || res;
 }
 
 export async function createBrand(data) {
-    const res = await axiosAdmin.post(ADMIN, data);
-    return { data: extractItem(res), message: res?.message };
+  return await axiosAdmin.post(ADMIN, data);
 }
 
 export async function updateBrand(id, data) {
-    let res;
-    if (data instanceof FormData) {
-        if (!data.has("_method")) {
-            data.append("_method", "PUT");
-        }
-        res = await axiosAdmin.post(`${ADMIN}/${id}`, data);
-    } else {
-        res = await axiosAdmin.put(`${ADMIN}/${id}`, data);
-    }
-    return { data: extractItem(res), message: res?.message };
+  if (data instanceof FormData && !data.has("_method")) {
+    data.append("_method", "PUT");
+    return await axiosAdmin.post(`${ADMIN}/${id}`, data);
+  }
+  return await axiosAdmin.put(`${ADMIN}/${id}`, data);
 }
 
 export async function deleteBrand(id) {
-    const res = await axiosAdmin.delete(`${ADMIN}/${id}`);
-    return { message: res?.message };
+  return await axiosAdmin.delete(`${ADMIN}/${id}`);
 }
 
-/* ---------- THÙNG RÁC ---------- */
 export async function getTrashBrands(page = 1, pageSize = 10) {
-    const res = await axiosAdmin.get(`${ADMIN}/trash`, {
-        params: { page, per_page: pageSize },
-    });
-    const list = extractList(res);
-    return {
-        data: list,
-        pagination: {
-            total: res?.meta?.total ?? list.length,
-            pageCount: res?.meta?.last_page ?? 1,
-            currentPage: res?.meta?.current_page ?? page,
-        },
-    };
+  const res = await axiosAdmin.get(`${ADMIN}/trash`, {
+    params: { page, per_page: pageSize },
+  });
+  return {
+    data: res.data || res,
+    pagination: {
+      total: res.meta?.total || 0,
+      pageCount: res.meta?.last_page || 1,
+      currentPage: res.meta?.current_page || page,
+    },
+  };
 }
 
 export async function restoreBrand(id) {
-    const res = await axiosAdmin.patch(`${ADMIN}/${id}/restore`);
-    return { message: res?.message };
+  return await axiosAdmin.patch(`${ADMIN}/${id}/restore`);
 }
 
 export async function forceDeleteBrand(id) {
-    const res = await axiosAdmin.delete(`${ADMIN}/${id}/force`);
-    return { message: res?.message };
+  return await axiosAdmin.delete(`${ADMIN}/${id}/force`);
 }

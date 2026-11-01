@@ -22,6 +22,19 @@ class StockDocumentController extends Controller
     {
         $query = StockDocument::with(['supplier', 'creator', 'items.product'])->latest('id');
 
+        if ($request->filled('type') && in_array($request->input('type'), ['in', 'out'])) {
+            $query->where('type', $request->input('type'));
+        }
+
+        if ($request->filled('keyword')) {
+            $kw = trim((string) $request->input('keyword'));
+            $query->where(function ($q) use ($kw) {
+                $q->where('code', 'LIKE', "%{$kw}%")
+                  ->orWhere('reason', 'LIKE', "%{$kw}%")
+                  ->orWhere('note', 'LIKE', "%{$kw}%");
+            });
+        }
+
         $perPage = (int) $request->input('per_page', 12);
         $documents = $query->paginate($perPage);
 
@@ -42,28 +55,39 @@ class StockDocumentController extends Controller
             $data['created_by'] = $request->user()->id;
         }
 
-        $document = DB::transaction(function () use ($data, $items) {
-            $doc = StockDocument::create($data);
+        try {
+            $document = DB::transaction(function () use ($data, $items) {
+                $doc = StockDocument::create($data);
 
-            if (! empty($items)) {
-                foreach ($items as $itemData) {
-                    $itemData['document_id'] = $doc->id;
-                    $itemData['unit_cost'] = $itemData['unit_cost'] ?? 0;
-                    StockDocumentItem::create($itemData);
+                if (! empty($items)) {
+                    foreach ($items as $itemData) {
+                        $itemData['document_id'] = $doc->id;
+                        $itemData['unit_cost'] = $itemData['unit_cost'] ?? 0;
+                        StockDocumentItem::create($itemData);
 
-                    $product = Product::find($itemData['product_id']);
-                    if ($product) {
+                        $product = Product::lockForUpdate()->find($itemData['product_id']);
+                        if (! $product) {
+                            throw new \Exception("Sản phẩm ID #{$itemData['product_id']} không tồn tại.");
+                        }
+
                         if ($doc->type === 'in') {
-                            $product->increment('qty', $itemData['qty']);
+                            $product->increment('qty', (int) $itemData['qty']);
                         } elseif ($doc->type === 'out') {
-                            $product->decrement('qty', $itemData['qty']);
+                            if ($product->qty < (int) $itemData['qty']) {
+                                throw new \Exception("Sản phẩm '{$product->name}' không đủ số lượng tồn kho để xuất (Hiện còn: {$product->qty}, yêu cầu xuất: {$itemData['qty']}).");
+                            }
+                            $product->decrement('qty', (int) $itemData['qty']);
                         }
                     }
                 }
-            }
 
-            return $doc;
-        });
+                return $doc;
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage() ?: 'Có lỗi xảy ra khi tạo phiếu kho.',
+            ], 422);
+        }
 
         return (new StockDocumentResource($document->load(['supplier', 'creator', 'items.product'])))
             ->additional(['message' => 'Thêm phiếu kho thành công.'])
@@ -82,10 +106,11 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * PUT|PATCH /api/admin/stock-documents/{stock_document} — Cập nhật phiếu xuất/nhập kho
+     * PUT|PATCH /api/admin/stock-documents/{id} — Cập nhật phiếu xuất/nhập kho
      */
-    public function update(StockDocumentRequest $request, StockDocument $stockDocument): JsonResponse
+    public function update(StockDocumentRequest $request, $id): JsonResponse
     {
+        $stockDocument = $id instanceof StockDocument ? $id : StockDocument::findOrFail($id);
         $data = $request->validated();
         unset($data['items']);
 
@@ -97,10 +122,11 @@ class StockDocumentController extends Controller
     }
 
     /**
-     * DELETE /api/admin/stock-documents/{stock_document} — Xóa tạm phiếu xuất/nhập kho (vào thùng rác)
+     * DELETE /api/admin/stock-documents/{id} — Xóa tạm phiếu xuất/nhập kho (vào thùng rác)
      */
-    public function destroy(StockDocument $stockDocument): JsonResponse
+    public function destroy($id): JsonResponse
     {
+        $stockDocument = $id instanceof StockDocument ? $id : StockDocument::findOrFail($id);
         $stockDocument->delete();
 
         return response()->json([

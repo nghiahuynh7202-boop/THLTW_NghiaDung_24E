@@ -60,14 +60,16 @@ function ProductsContent() {
     const range = PRICE_RANGES[filters.price]; // undefined nếu chưa chọn giá
     const kw = keyword.trim().toLowerCase();
 
-    return products.filter(
-      (p) =>
+    return products.filter((p) => {
+      const payable = p.salePrice !== null && p.salePrice !== undefined ? p.salePrice : p.price;
+      return (
         (p.name || "").toLowerCase().includes(kw) &&
         (!filters.categoryId || categoryIds.includes(String(p.category_id))) &&
         (filters.brandIds.length === 0 || filters.brandIds.includes(String(p.brand_id))) &&
-        (!range || (p.price >= range.min && p.price < range.max)) &&
-        (!onlySale || p.originalPrice)
-    );
+        (!range || (payable >= range.min && payable < range.max)) &&
+        (!onlySale || p.salePrice !== null)
+      );
+    });
   }, [products, categories, keyword, filters, onlySale]);
 
   const title = onlySale

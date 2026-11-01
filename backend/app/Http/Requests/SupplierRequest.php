@@ -16,8 +16,8 @@ class SupplierRequest extends FormRequest
 
     public function rules(): array
     {
-        $supplierId = $this->route('supplier') ? ($this->route('supplier')->id ?? $this->route('supplier')) : null;
-        $isCreate = $this->isMethod('post');
+        $supplierId = $this->route('supplier') ? ($this->route('supplier')->id ?? $this->route('supplier')) : $this->route('id');
+        $isCreate = $this->isMethod('post') && empty($supplierId);
 
         return [
             'name'    => [

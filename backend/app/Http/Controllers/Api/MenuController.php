@@ -69,9 +69,9 @@ class MenuController extends Controller
     /**
      * DELETE /api/admin/menus/{menu} — Xóa tạm menu (vào thùng rác)
      */
-    public function destroy(Menu $menu): JsonResponse
+    public function destroy($id): JsonResponse
     {
-        $menu->update(['status' => 0]);
+        $menu = $id instanceof Menu ? $id : Menu::findOrFail($id);
         $menu->delete();
 
         return response()->json([
@@ -99,6 +99,7 @@ class MenuController extends Controller
     {
         $menu = Menu::onlyTrashed()->findOrFail($id);
         $menu->restore();
+        $menu->update(['status' => 1]);
 
         return (new MenuResource($menu))
             ->additional(['message' => 'Khôi phục menu thành công.'])

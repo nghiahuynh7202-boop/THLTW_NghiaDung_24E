@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * File này làm gì: Model ánh xạ bảng `order` trong database.
+ * Lưu thông tin đơn đặt hàng, khách nhận, phương thức thanh toán (`payment_method`) và liên kết OrderDetail.
+ */
 class Order extends Model
 {
     use HasFactory;

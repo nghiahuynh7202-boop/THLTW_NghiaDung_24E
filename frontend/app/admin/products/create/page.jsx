@@ -29,6 +29,7 @@ export default function CreateProductPage() {
         qty: "0",
         description: "",
         status: "1",
+        is_featured: "0",
     });
     const [image, setImage] = useState(null);
     const [preview, setPreview] = useState("");
@@ -85,8 +86,10 @@ export default function CreateProductPage() {
             setPreview(URL.createObjectURL(file));
             return;
         }
+        const checked = target.checked;
+        const finalValue = type === "checkbox" ? (checked ? "1" : "0") : value;
         setForm((prev) => {
-            const updated = { ...prev, [name]: value };
+            const updated = { ...prev, [name]: finalValue };
             if (name === "name")
                 updated.slug = generateSlug(value);
             return updated;
@@ -127,6 +130,7 @@ export default function CreateProductPage() {
             formData.append("qty", form.qty || "0");
             formData.append("description", form.description || "");
             formData.append("status", form.status);
+            formData.append("is_featured", form.is_featured || "0");
             if (image)
                 formData.append("image", image);
             await createProduct(formData);
@@ -237,6 +241,19 @@ export default function CreateProductPage() {
                                 </label>
                                 <input type="file" name="image" onChange={handleChange} accept="image/*" className="w-full rounded-xl border border-gray-200 px-4 py-2 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-blue-600 file:cursor-pointer cursor-pointer"/>
                                 {preview && (<img src={preview} alt="Xem trước" className="mt-4 w-32 h-32 object-cover rounded-xl border shadow-sm"/>)}
+                            </div>
+
+                            {/* CHỨC NĂNG SẢN PHẨM NỔI BẬT: Admin tick chọn để đánh dấu `is_featured = 1` */}
+                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between">
+                                <label className="inline-flex items-center gap-3 text-[15px] font-semibold text-gray-700 cursor-pointer">
+                                    <input type="checkbox" name="is_featured" checked={form.is_featured === "1"} onChange={handleChange} className="h-5 w-5 rounded accent-blue-600 cursor-pointer"/>
+                                    Sản phẩm nổi bật
+                                </label>
+                                {form.is_featured === "1" && (
+                                    <span className="text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                                        ⭐ Nổi bật
+                                    </span>
+                                )}
                             </div>
 
                             <div>

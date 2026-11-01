@@ -6,17 +6,22 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductSale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * File này làm gì: Quản lý Danh mục sản phẩm (Category) theo cấu trúc cây cha - con.
+ * Phục vụ menu danh mục ở trang chủ và toàn bộ tác vụ CRUD danh mục trong trang quản trị.
+ */
 class CategoryController extends Controller
 {
-    /**
-     * GET /api/categories hoặc GET /api/admin/categories — Danh sách danh mục
-     */
+    // Lấy danh sách danh mục: khách chỉ nhận danh mục gốc đang hiển thị, admin lấy toàn bộ cây danh mục
     public function index(Request $request): AnonymousResourceCollection
     {
         $query = Category::with('children')->latest('id');
@@ -76,24 +81,35 @@ class CategoryController extends Controller
     /**
      * PUT|PATCH /api/admin/categories/{category} — Cập nhật danh mục
      */
-    public function update(CategoryRequest $request, Category $category): JsonResponse
+    public function update(CategoryRequest $request, $id): JsonResponse
     {
+        $category = $id instanceof Category ? $id : Category::findOrFail($id);
         $data = $request->validated();
+
+        if (empty($data['slug']) && !empty($data['name'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
 
         if (isset($data['parent_id']) && (int)$data['parent_id'] === 0) {
             $data['parent_id'] = null;
         }
 
         if (isset($data['is_featured'])) {
-            $data['is_featured'] = filter_var($data['is_featured'], FILTER_VALIDATE_BOOLEAN);
+            $data['is_featured'] = filter_var($data['is_featured'], FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
         }
 
+        if (isset($data['status'])) {
+            $data['status'] = (int)$data['status'];
+        }
+
+        // Xử lý ảnh: nếu có upload ảnh mới thì xóa ảnh cũ và lưu ảnh mới
         if ($request->hasFile('image')) {
-            if ($category->image) {
+            if ($category->image && Storage::disk('public')->exists($category->image)) {
                 Storage::disk('public')->delete($category->image);
             }
             $data['image'] = $request->file('image')->store('categories', 'public');
         } else {
+            // Không gửi ảnh mới thì giữ nguyên ảnh cũ
             unset($data['image']);
         }
 
@@ -107,8 +123,9 @@ class CategoryController extends Controller
     /**
      * DELETE /api/admin/categories/{category} — Xóa tạm danh mục (vào thùng rác)
      */
-    public function destroy(Category $category): JsonResponse
+    public function destroy($id): JsonResponse
     {
+        $category = $id instanceof Category ? $id : Category::findOrFail($id);
         $category->update(['status' => 0]);
 
         return response()->json([
@@ -147,7 +164,16 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
 
-        if ($category->image) {
+        $productCount = Product::withTrashed()->where('category_id', $category->id)->count();
+        if ($productCount > 0) {
+            return response()->json([
+                'message' => "Danh mục còn {$productCount} sản phẩm, hãy chuyển hoặc xóa vĩnh viễn sản phẩm trước",
+            ], 422);
+        }
+
+        Category::where('parent_id', $category->id)->update(['parent_id' => null]);
+
+        if ($category->image && Storage::disk('public')->exists($category->image)) {
             Storage::disk('public')->delete($category->image);
         }
 

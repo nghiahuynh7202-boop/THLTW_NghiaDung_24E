@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Pagination from "@/components/shop/ui/Pagination";
 import { getAdminBrands, deleteBrand } from "@/services/brandServices";
-import { RefreshCw, Trash2, Plus, Edit2, Award, Image as ImageIcon } from "lucide-react";
+import { RefreshCw, Trash2, Plus, Edit2, Award, Image as ImageIcon, Search } from "lucide-react";
 
 const ITEMS_PER_PAGE = 5;
 
@@ -49,6 +49,8 @@ function BrandContent() {
   const refresh = searchParams.get("refresh");
 
   const [brands, setBrands] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -69,11 +71,26 @@ function BrandContent() {
     void fetchAllBrands();
   }, [refresh, fetchAllBrands]);
 
-  const pageCount = Math.max(1, Math.ceil(brands.length / ITEMS_PER_PAGE));
+  const filteredBrands = useMemo(() => {
+    return brands.filter((item) => {
+      if (statusFilter !== "all" && String(item.status) !== String(statusFilter)) {
+        return false;
+      }
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const matchName = item.name?.toLowerCase().includes(term);
+        const matchDesc = item.description?.toLowerCase().includes(term);
+        return matchName || matchDesc;
+      }
+      return true;
+    });
+  }, [brands, statusFilter, searchTerm]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredBrands.length / ITEMS_PER_PAGE));
   const currentBrands = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return brands.slice(start, start + ITEMS_PER_PAGE);
-  }, [brands, currentPage]);
+    return filteredBrands.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredBrands, currentPage]);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn chắc chắn muốn chuyển thương hiệu này vào thùng rác?")) return;
@@ -129,13 +146,44 @@ function BrandContent() {
 
         {/* Khung Card chính */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          {/* Thanh tiêu đề con */}
-          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex items-center justify-between">
+          {/* Thanh tiêu đề con & Bộ lọc */}
+          <div className="px-5 py-3.5 bg-white border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-sm font-bold text-gray-800">Danh sách thương hiệu</span>
               <span className="text-[11px] font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {brands.length}
+                {filteredBrands.length}
               </span>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Ô tìm kiếm */}
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Tìm thương hiệu, mô tả..."
+                  className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] w-48 sm:w-56"
+                />
+              </div>
+
+              {/* Lọc trạng thái */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:border-[#f68b1f] bg-white text-gray-600"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Đã ẩn</option>
+              </select>
             </div>
           </div>
 

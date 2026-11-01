@@ -16,8 +16,17 @@ class PageRequest extends FormRequest
 
     public function rules(): array
     {
-        $pageId = $this->route('page') ? ($this->route('page')->id ?? $this->route('page')) : null;
-        $isCreate = $this->isMethod('post');
+        $pageId = $this->route('page');
+        if ($pageId instanceof \App\Models\Page) {
+            $pageId = $pageId->id;
+        } elseif (is_array($pageId)) {
+            $pageId = $pageId['id'] ?? null;
+        }
+        if (! $pageId) {
+            $pageId = $this->route('id');
+        }
+
+        $isCreate = $this->isMethod('post') && empty($pageId);
 
         return [
             'title'   => [

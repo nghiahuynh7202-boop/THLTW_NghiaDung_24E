@@ -3,11 +3,14 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, User, ChevronDown, Menu, X, LogOut, LogIn, UserPlus, } from "lucide-react";
+import { ShoppingBag, User, ChevronDown, Menu, X, LogOut, LogIn, UserPlus } from "lucide-react";
+import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
+
 export default function Header() {
     const router = useRouter();
-    const [user, setUser] = useState(null);
-    const [cartCount, setCartCount] = useState(0);
+    const { totalCount } = useCart();
+    const { user, logout } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -24,31 +27,15 @@ export default function Header() {
         window.addEventListener("scroll", handleScroll, { passive: true });
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
     useEffect(() => {
         setIsMounted(true);
-        try {
-            const savedUser = localStorage.getItem("user");
-            if (savedUser) {
-                setUser(JSON.parse(savedUser));
-            }
-            const savedCart = localStorage.getItem("cart");
-            if (savedCart) {
-                const items = JSON.parse(savedCart);
-                if (Array.isArray(items)) {
-                    setCartCount(items.reduce((sum, item) => sum + (item.qty || 1), 0));
-                }
-            }
-        }
-        catch {
-            // ignore
-        }
     }, []);
+
     const currentUser = isMounted ? user : null;
-    const currentCartCount = isMounted ? cartCount : 0;
+    const currentCartCount = isMounted ? totalCount : 0;
     const handleLogout = () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("user");
-        setUser(null);
+        logout();
         setAccountMenuOpen(false);
         alert("Đã đăng xuất thành công!");
         router.push("/login");
@@ -76,15 +63,10 @@ export default function Header() {
     ];
     const navMenuItems = [
         { label: "TRANG CHỦ", href: "/" },
+        { label: "GIỚI THIỆU", href: "/about" },
         { label: "SẢN PHẨM", href: "/products" },
-        { label: "ĐỐI TƯỢNG", href: "/doi-tuong" },
-        { label: "KIỂU DÁNG", href: "/kieu-dang" },
-        { label: "HOA TƯƠI", href: "/hoa-tuoi" },
-        { label: "MÀU SẮC", href: "/mau-sac" },
-        { label: "BỘ SƯU TẬP", href: "/bo-suu-tap" },
-        { label: "QUÀ TẶNG KÈM", href: "/qua-tang-kem" },
-        { label: "HOA CƯỚI", href: "/hoa-cuoi" },
-        { label: "Ý NGHĨA HOA", href: "/y-nghia-hoa" },
+        { label: "BÀI VIẾT", href: "/posts" },
+        { label: "LIÊN HỆ", href: "/contact" },
     ];
     const handleSearch = (e) => {
         e.preventDefault();
@@ -251,6 +233,13 @@ export default function Header() {
                             </span>
                           </div>
 
+                          <div className="py-1 border-b border-gray-100">
+                            <Link href="/profile" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-2 px-3.5 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] transition-colors font-medium">
+                              <User className="w-3.5 h-3.5 text-gray-500"/>
+                              <span>Thông tin cá nhân</span>
+                            </Link>
+                          </div>
+
                           {currentUser.role === "admin" && (
                             <div className="py-1 border-b border-gray-100">
                               <Link href="/admin/products" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-2 px-3.5 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] transition-colors font-medium">
@@ -308,7 +297,7 @@ export default function Header() {
           <nav className="border-t border-b border-gray-200 bg-[#fafafa]">
             <div className="max-w-7xl mx-auto px-4 sm:px-8">
               {/* Desktop Nav */}
-              <div className="hidden lg:flex items-center justify-between text-xs font-bold text-gray-700">
+              <div className="hidden lg:flex items-center justify-center gap-10 sm:gap-14 text-xs font-bold text-gray-700">
                 {navMenuItems.map((item, index) => (
                   <Link key={index} href={item.href} className="py-2.5 px-2 hover:text-[#f68b1f] hover:bg-orange-50/50 transition-colors uppercase tracking-tight relative group">
                     {item.label}
@@ -333,7 +322,10 @@ export default function Header() {
                             <p className="text-[10px] text-gray-500 truncate">{currentUser.email}</p>
                           </div>
                         </div>
-                        <div className="pt-1 border-t border-gray-200">
+                        <div className="pt-1 border-t border-gray-200 space-y-1">
+                          <Link href="/profile" onClick={() => setMobileMenuOpen(false)} className="block w-full py-1.5 px-3 text-center text-xs font-medium text-gray-700 bg-white border border-gray-200 rounded hover:text-[#f68b1f]">
+                            Thông tin cá nhân
+                          </Link>
                           <button type="button" onClick={handleLogout} className="w-full py-1.5 px-3 text-center text-xs font-medium text-red-600 bg-white border border-red-200 rounded">
                             Đăng xuất
                           </button>

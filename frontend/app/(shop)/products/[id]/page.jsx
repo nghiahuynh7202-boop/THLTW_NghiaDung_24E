@@ -3,10 +3,15 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getProductBySlug } from "@/services/productServices";
+import { formatProduct } from "@/lib/product";
 import ProductDetail from "@/components/products/ProductDetail";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+/**
+ * File này làm gì: Trang Chi Tiết Sản Phẩm (Product Detail).
+ * Lấy slug hoặc id từ URL, gọi API lấy thông tin chi tiết hoa và hiển thị qua component `ProductDetail`.
+ */
 export default function ProductDetailPage() {
   const params = useParams();
   const slug = params?.slug || params?.id;
@@ -19,21 +24,13 @@ export default function ProductDetailPage() {
       try {
         setLoading(true);
         setError(null);
-        console.log("Fetching product with slug:", slug);
-        
         const res = await getProductBySlug(slug);
-        console.log("Full Response:", res);
-        
-        // Extract product from response
         const productData = res?.data || res;
-        console.log("Product Data:", productData);
         
         if (productData && Object.keys(productData).length > 0) {
-          setProduct(productData);
-          console.log("Product loaded successfully");
+          setProduct(formatProduct(productData));
         } else {
           setError("Không tìm thấy sản phẩm");
-          console.error(" Product data is empty");
         }
       } catch (err) {
         console.error(" Lỗi:", err);
@@ -49,23 +46,23 @@ export default function ProductDetailPage() {
   }, [slug]);
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Back Button */}
-      <div className="container mx-auto px-4 pt-8">
+    <div className="bg-white min-h-screen pb-12">
+      {/* Nút quay lại gọn gàng */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-2">
         <Link 
           href="/products" 
-          className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium mb-6 hover:gap-3 transition"
+          className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#f68b1f] transition"
         >
-          <ArrowLeft size={20} />
-          Quay lại
+          <ArrowLeft size={14} />
+          <span>Quay lại danh sách hoa</span>
         </Link>
       </div>
 
       {loading && (
         <div className="container mx-auto px-4 py-16 text-center">
           <div className="inline-block">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-            <p className="text-gray-500 text-lg">Đang tải sản phẩm...</p>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f68b1f] mb-4"></div>
+            <p className="text-gray-500 text-lg">Đang tải thông tin hoa...</p>
           </div>
         </div>
       )}
@@ -76,7 +73,7 @@ export default function ProductDetailPage() {
             <p className="text-red-600 text-lg mb-4 font-semibold">⚠️ {error}</p>
             <Link 
               href="/products" 
-              className="inline-block text-blue-600 hover:text-blue-700 font-medium hover:underline"
+              className="inline-block text-[#f68b1f] hover:underline font-medium"
             >
               Quay lại danh sách sản phẩm
             </Link>
