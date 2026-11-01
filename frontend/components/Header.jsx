@@ -63,15 +63,10 @@ export default function Header() {
     ];
     const navMenuItems = [
         { label: "TRANG CHỦ", href: "/" },
+        { label: "GIỚI THIỆU", href: "/about" },
         { label: "SẢN PHẨM", href: "/products" },
         { label: "BÀI VIẾT", href: "/posts" },
-        { label: "KIỂU DÁNG", href: "/kieu-dang" },
-        { label: "HOA TƯƠI", href: "/hoa-tuoi" },
-        { label: "MÀU SẮC", href: "/mau-sac" },
-        { label: "BỘ SƯU TẬP", href: "/bo-suu-tap" },
-        { label: "QUÀ TẶNG KÈM", href: "/qua-tang-kem" },
-        { label: "HOA CƯỚI", href: "/hoa-cuoi" },
-        { label: "Ý NGHĨA HOA", href: "/y-nghia-hoa" },
+        { label: "LIÊN HỆ", href: "/contact" },
     ];
     const handleSearch = (e) => {
         e.preventDefault();
@@ -302,7 +297,7 @@ export default function Header() {
           <nav className="border-t border-b border-gray-200 bg-[#fafafa]">
             <div className="max-w-7xl mx-auto px-4 sm:px-8">
               {/* Desktop Nav */}
-              <div className="hidden lg:flex items-center justify-between text-xs font-bold text-gray-700">
+              <div className="hidden lg:flex items-center justify-center gap-10 sm:gap-14 text-xs font-bold text-gray-700">
                 {navMenuItems.map((item, index) => (
                   <Link key={index} href={item.href} className="py-2.5 px-2 hover:text-[#f68b1f] hover:bg-orange-50/50 transition-colors uppercase tracking-tight relative group">
                     {item.label}
