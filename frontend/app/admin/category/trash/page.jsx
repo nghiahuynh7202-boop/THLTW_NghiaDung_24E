@@ -52,6 +52,14 @@ export default function TrashCategoryPage() {
     }
   };
 
+  const getErrorMessage = (err, fallback = "Có lỗi xảy ra") => {
+    const raw = err?.response?.data?.message || err?.message || fallback;
+    if (typeof raw === "string" && (raw.includes("SQLSTATE") || raw.includes("foreign key constraint fails"))) {
+      return "Không thể xóa do danh mục đang có sản phẩm hoặc dữ liệu liên quan.";
+    }
+    return raw;
+  };
+
   const handleRestore = async (id) => {
     if (!window.confirm("Khôi phục danh mục này?")) return;
     try {
@@ -59,7 +67,7 @@ export default function TrashCategoryPage() {
       alert("✅ Khôi phục thành công!");
       reloadAfterChange();
     } catch (err) {
-      alert("❌ " + (err?.response?.data?.message || err?.message || "Khôi phục thất bại"));
+      alert("❌ " + getErrorMessage(err, "Khôi phục thất bại"));
     }
   };
 
@@ -70,7 +78,7 @@ export default function TrashCategoryPage() {
       alert("✅ Đã xóa vĩnh viễn!");
       reloadAfterChange();
     } catch (err) {
-      alert("❌ " + (err?.response?.data?.message || err?.message || "Xóa thất bại"));
+      alert("❌ " + getErrorMessage(err, "Xóa thất bại"));
     }
   };
 
@@ -79,11 +87,13 @@ export default function TrashCategoryPage() {
       return;
     try {
       const results = await Promise.allSettled(categories.map((c) => axiosAdmin.delete(forceUrl(c.id))));
-      const failed = results.filter((r) => r.status === "rejected").length;
-      if (failed === 0) {
+      const rejected = results.filter((r) => r.status === "rejected");
+      if (rejected.length === 0) {
         alert("✅ Đã xóa tất cả!");
       } else {
-        alert(`⚠️ Đã xóa với ${failed} danh mục thất bại`);
+        const firstReason = rejected[0]?.reason;
+        const msg = getErrorMessage(firstReason, "");
+        alert(`⚠️ Có ${rejected.length} danh mục không thể xóa${msg ? `: ${msg}` : ""}`);
       }
       setCurrentPage(1);
       void fetchTrashed(1);

@@ -71,7 +71,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Nhập email..."
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#f68b1f]"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
             />
           </div>
 
@@ -85,14 +85,14 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Nhập mật khẩu..."
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#f68b1f]"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-[#f68b1f] hover:bg-[#e67300] text-white font-semibold rounded text-sm transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-full py-2.5 bg-[#B83A63] hover:bg-[#9E2F54] text-white font-semibold rounded text-sm transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
           >
             {loading ? "Đang xử lý..." : "Đăng nhập"}
           </button>
@@ -100,7 +100,7 @@ export default function LoginPage() {
 
         <p className="mt-4 text-center text-sm text-gray-600">
           Chưa có tài khoản?{" "}
-          <Link href="/register" className="text-[#f68b1f] font-semibold hover:underline">
+          <Link href="/register" className="text-[#B83A63] hover:text-[#9E2F54] font-semibold hover:underline">
             Đăng ký ngay
           </Link>
         </p>

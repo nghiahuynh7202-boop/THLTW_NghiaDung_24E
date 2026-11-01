@@ -1,20 +1,39 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight, Image as ImageIcon } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import API_CONFIG from "@/config/api";
 
-export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
-
-  // Định dạng ảnh
+function CartItemImage({ image, name }) {
+  const [hasError, setHasError] = useState(false);
   const getImageUrl = (img) => {
-    if (!img) return "/images/hoa.jpg";
+    if (!img) return "";
     if (img.startsWith("http") || img.startsWith("blob:") || img.startsWith("/images/")) return img;
     const clean = img.replace(/^\/?storage\//, "").replace(/^\/+/, "");
     return `${API_CONFIG.ROOT_URL}/storage/${clean}`;
   };
+  const src = getImageUrl(image);
+  if (!src || hasError) {
+    return (
+      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
+        <ImageIcon className="w-6 h-6 text-gray-300" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={name}
+      onError={() => setHasError(true)}
+      className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-gray-100 shrink-0"
+    />
+  );
+}
+
+export default function CartPage() {
+  const { cartItems, updateQuantity, removeFromCart, clearCart, totalCount } = useCart();
 
   // Tính tổng tiền
   const totalPrice = cartItems.reduce(
@@ -71,18 +90,21 @@ export default function CartPage() {
                 {cartItems.map((item) => (
                   <div key={item.id} className="p-4 sm:p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <img
-                        src={getImageUrl(item.image)}
-                        alt={item.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-gray-100 shrink-0"
-                      />
+                      <CartItemImage image={item.image} name={item.name} />
                       <div className="min-w-0">
                         <Link href={`/products/${item.slug || item.id}`} className="text-sm font-semibold text-gray-800 hover:text-[#f68b1f] line-clamp-1">
                           {item.name}
                         </Link>
-                        <p className="text-xs text-[#d32f2f] font-bold mt-1">
-                          {formatMoney(item.price)}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-xs text-[#d32f2f] font-bold">
+                            {formatMoney(item.price)}
+                          </p>
+                          {item.originalPrice && (
+                            <span className="text-[11px] text-gray-400 line-through">
+                              {formatMoney(item.originalPrice)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 

@@ -103,80 +103,91 @@ export default function CheckoutPage() {
         })),
       };
 
-      const token = localStorage.getItem("token") || localStorage.getItem("accessToken");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.post(`${API_CONFIG.BASE_URL}/orders`, payload);
+      const newOrder = res.data.data;
+      setCreatedOrder(newOrder);
 
-      const res = await axios.post(`${API_CONFIG.BASE_URL}/orders`, payload, { headers });
-      const order = res.data?.data || res.data;
-      setCreatedOrder(order);
-
-      // Nếu chọn COD thì xong luôn và xóa giỏ
+      // Nếu COD thì hoàn tất luôn
       if (paymentMethod === "cod") {
         clearCart();
       }
     } catch (err) {
-      alert("❌ " + (err.response?.data?.message || "Đặt hàng thất bại"));
+      alert(err.response?.data?.message || "Đặt hàng thất bại!");
     } finally {
       setLoading(false);
     }
   };
 
-  // Nút mô phỏng thanh toán SePay khi báo cáo cô
+  // Giả lập thanh toán SePay thành công (để demo với giảng viên)
   const handleMockPayment = async () => {
     if (!createdOrder?.id) return;
     try {
       await axios.post(`${API_CONFIG.BASE_URL}/sepay/mock-payment/${createdOrder.id}`);
       setIsPaid(true);
       clearCart();
+      alert("Giả lập SePay: Chuyển khoản thành công!");
     } catch {
-      setIsPaid(true);
-      clearCart();
+      alert("Lỗi giả lập SePay");
     }
   };
 
-  // MÀN HÌNH 1: QUÉT MÃ QR SEPAY
+  // MÀN HÌNH 1: QUÉT MÃ VIETQR SEPAY
   if (createdOrder && paymentMethod === "qr") {
-    const orderId = createdOrder.id;
-    const finalAmount = createdOrder.total || totalPrice;
-    const transferContent = `HOA ${orderId}`;
-    const qrUrl = `https://img.vietqr.io/image/${BANK_CONFIG.BANK_NAME}-${BANK_CONFIG.BANK_ACCOUNT}-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(
-      transferContent
-    )}&accountName=${encodeURIComponent(BANK_CONFIG.ACCOUNT_NAME)}`;
+    const transferContent = `DH${createdOrder.id}`;
+    const amount = createdOrder.total;
+    const bankCode = BANK_CONFIG.BANK_CODE || "ACB";
+    const accountNumber = BANK_CONFIG.ACCOUNT_NUMBER || BANK_CONFIG.BANK_ACCOUNT || "18900291";
+    const accountName = BANK_CONFIG.ACCOUNT_NAME || "DAO DUY DUNG";
+    const qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=${bankCode}&amount=${amount}&des=${transferContent}`;
 
     return (
       <div className="min-h-[80vh] bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-sm border border-gray-200 text-center space-y-4">
+          <h2 className="text-xl font-bold text-gray-800">Thanh Toán VietQR (SePay)</h2>
+
           {isPaid ? (
-            <div className="space-y-4">
-              <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
-                <CheckCircle className="w-8 h-8" />
+            /* Khi SePay đã nhận tiền thành công */
+            <div className="space-y-4 py-4 animate-in fade-in">
+              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                <CheckCircle className="w-10 h-10" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800">Thanh Toán Thành Công!</h2>
-              <p className="text-xs text-gray-500">Đơn hàng #DH{orderId} đã được tự động xác nhận.</p>
+              <h3 className="text-lg font-bold text-emerald-600">Thanh Toán Thành Công!</h3>
+              <p className="text-xs text-gray-500">Đơn hàng #DH{createdOrder.id} đã được xác nhận thanh toán.</p>
               <div className="flex gap-2 pt-2">
-                <Link href="/profile" className="flex-1 py-2.5 bg-gray-100 text-gray-700 text-xs font-bold rounded">
+                <Link href="/profile" className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded">
                   Xem đơn hàng
                 </Link>
-                <Link href="/" className="flex-1 py-2.5 bg-[#f68b1f] text-white text-xs font-bold rounded">
-                  Tiếp tục mua sắm
+                <Link href="/" className="flex-1 py-2.5 bg-[#B83A63] hover:bg-[#9E2F54] text-white text-xs font-bold rounded">
+                  Về trang chủ
                 </Link>
               </div>
             </div>
           ) : (
+            /* Khi đang chờ khách quét QR */
             <div className="space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>Đang chờ chuyển khoản SePay...</span>
+              <div className="p-3 bg-blue-50 text-blue-700 rounded text-xs flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Đang chờ chuyển khoản... Tự động nhận diện trong vài giây</span>
               </div>
-              <h2 className="text-lg font-bold text-gray-800">Quét mã VietQR để thanh toán</h2>
 
-              <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 flex flex-col items-center">
-                <img src={qrUrl} alt="VietQR" className="w-48 h-48 object-contain bg-white p-2 rounded shadow-xs" />
-                <div className="w-full mt-3 text-xs text-left space-y-1 text-gray-600">
-                  <p><strong>Ngân hàng:</strong> {BANK_CONFIG.BANK_NAME}</p>
-                  <p><strong>Số tài khoản:</strong> {BANK_CONFIG.BANK_ACCOUNT}</p>
-                  <p><strong>Chủ tài khoản:</strong> {BANK_CONFIG.ACCOUNT_NAME}</p>
-                  <p><strong>Số tiền:</strong> <span className="text-[#d32f2f] font-bold">{formatMoney(finalAmount)}</span></p>
+              {/* Ảnh mã VietQR tạo động theo số tiền và mã đơn */}
+              <div className="border p-3 rounded-xl inline-block bg-white shadow-xs">
+                <img
+                  src={qrUrl}
+                  alt="VietQR SePay"
+                  className="w-56 h-56 mx-auto object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(transferContent)}&accountName=${encodeURIComponent(accountName)}`;
+                  }}
+                />
+              </div>
+
+              <div className="text-xs text-gray-600 space-y-1 text-left bg-gray-50 p-3 rounded-lg border">
+                <p><strong>Ngân hàng:</strong> {BANK_CONFIG.BANK_NAME} ({bankCode})</p>
+                <p><strong>Số tài khoản:</strong> <span className="font-mono font-bold text-gray-900">{accountNumber}</span></p>
+                <p><strong>Chủ tài khoản:</strong> {accountName}</p>
+                <div className="border-t pt-1 mt-1">
+                  <p><strong>Số tiền:</strong> <span className="text-[#B83A63] font-bold text-sm">{formatMoney(amount)}</span></p>
                   <p><strong>Nội dung CK:</strong> <span className="text-blue-600 font-bold">{transferContent}</span></p>
                 </div>
               </div>
@@ -187,7 +198,7 @@ export default function CheckoutPage() {
                 onClick={handleMockPayment}
                 className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded cursor-pointer"
               >
-                ⚡ Mô phỏng đã nhận tiền (Báo cáo cô)
+                 Mô phỏng đã nhận tiền
               </button>
             </div>
           )}
@@ -210,7 +221,7 @@ export default function CheckoutPage() {
             <Link href="/profile" className="flex-1 py-2.5 bg-gray-100 text-gray-700 text-xs font-bold rounded">
               Xem đơn hàng
             </Link>
-            <Link href="/" className="flex-1 py-2.5 bg-[#f68b1f] text-white text-xs font-bold rounded">
+            <Link href="/" className="flex-1 py-2.5 bg-[#B83A63] hover:bg-[#9E2F54] text-white text-xs font-bold rounded">
               Tiếp tục mua sắm
             </Link>
           </div>
@@ -237,7 +248,7 @@ export default function CheckoutPage() {
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-200 rounded p-2 text-xs"
+                className="w-full bg-white border border-gray-300 rounded p-2 text-xs text-gray-800 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
                 placeholder="Nguyễn Văn A"
               />
             </div>
@@ -249,7 +260,7 @@ export default function CheckoutPage() {
                 required
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full border border-gray-200 rounded p-2 text-xs"
+                className="w-full bg-white border border-gray-300 rounded p-2 text-xs text-gray-800 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
                 placeholder="0901234567"
               />
             </div>
@@ -261,7 +272,7 @@ export default function CheckoutPage() {
                 required
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
-                className="w-full border border-gray-200 rounded p-2 text-xs"
+                className="w-full bg-white border border-gray-300 rounded p-2 text-xs text-gray-800 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
                 placeholder="123 Đường ABC, Quận 1, TP.HCM"
               />
             </div>
@@ -272,7 +283,7 @@ export default function CheckoutPage() {
                 rows={2}
                 value={form.note}
                 onChange={(e) => setForm({ ...form, note: e.target.value })}
-                className="w-full border border-gray-200 rounded p-2 text-xs"
+                className="w-full bg-white border border-gray-300 rounded p-2 text-xs text-gray-800 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
                 placeholder="Lời chúc trên thiệp hoặc yêu cầu đặc biệt..."
               />
             </div>
@@ -281,25 +292,27 @@ export default function CheckoutPage() {
             <div className="pt-2">
               <label className="block text-xs font-semibold text-gray-700 mb-2">Phương thức thanh toán</label>
               <div className="grid grid-cols-2 gap-3">
-                <label className={`border p-3 rounded-lg flex items-center gap-2 cursor-pointer ${paymentMethod === "cod" ? "border-[#f68b1f] bg-orange-50/20" : "border-gray-200"}`}>
+                <label className={`border p-3 rounded-lg flex items-center gap-2 cursor-pointer transition ${paymentMethod === "cod" ? "border-[#B83A63] bg-pink-50/40 text-[#B83A63]" : "border-gray-200 text-gray-700"}`}>
                   <input
                     type="radio"
                     name="method"
                     value="cod"
                     checked={paymentMethod === "cod"}
                     onChange={() => setPaymentMethod("cod")}
+                    className="accent-[#B83A63]"
                   />
                   <Banknote className="w-4 h-4 text-emerald-600" />
                   <span className="text-xs font-semibold">Tiền mặt (COD)</span>
                 </label>
 
-                <label className={`border p-3 rounded-lg flex items-center gap-2 cursor-pointer ${paymentMethod === "qr" ? "border-[#f68b1f] bg-orange-50/20" : "border-gray-200"}`}>
+                <label className={`border p-3 rounded-lg flex items-center gap-2 cursor-pointer transition ${paymentMethod === "qr" ? "border-[#B83A63] bg-pink-50/40 text-[#B83A63]" : "border-gray-200 text-gray-700"}`}>
                   <input
                     type="radio"
                     name="method"
                     value="qr"
                     checked={paymentMethod === "qr"}
                     onChange={() => setPaymentMethod("qr")}
+                    className="accent-[#B83A63]"
                   />
                   <QrCode className="w-4 h-4 text-blue-600" />
                   <span className="text-xs font-semibold">Quét mã VietQR</span>
@@ -323,13 +336,13 @@ export default function CheckoutPage() {
 
             <div className="border-t pt-3 flex justify-between font-bold text-sm">
               <span>Tổng thanh toán:</span>
-              <span className="text-[#d32f2f] text-base">{formatMoney(totalPrice)}</span>
+              <span className="text-[#B83A63] text-base font-extrabold">{formatMoney(totalPrice)}</span>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-[#f68b1f] hover:bg-[#e67300] text-white text-xs font-bold rounded shadow-xs transition cursor-pointer"
+              className="w-full py-3 bg-[#B83A63] hover:bg-[#9E2F54] text-white text-xs font-bold rounded shadow-xs transition cursor-pointer"
             >
               {loading ? "Đang xử lý..." : "Xác nhận đặt hàng"}
             </button>

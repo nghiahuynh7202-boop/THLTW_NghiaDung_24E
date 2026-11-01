@@ -2,27 +2,35 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { ShoppingCart, Eye } from "lucide-react";
+import { ShoppingCart, Eye, Image as ImageIcon } from "lucide-react";
 import API_CONFIG from "@/config/api";
 
 export default function ProductCard({ product, onAddToCart }) {
+  const [hasImgError, setHasImgError] = useState(false);
+
   // Lấy đường dẫn ảnh
   const getImageUrl = (img) => {
-    if (!img) return "/images/hoa.jpg";
+    if (!img) return "";
     if (img.startsWith("http") || img.startsWith("blob:") || img.startsWith("/images/")) return img;
     const clean = img.replace(/^\/?storage\//, "").replace(/^\/+/, "");
     return `${API_CONFIG.ROOT_URL}/storage/${clean}`;
   };
 
-  const [imgSrc, setImgSrc] = useState(() => getImageUrl(product?.image));
+  const imgSrc = getImageUrl(product?.image);
 
   // Định dạng tiền Việt Nam
   const formatMoney = (val) => Number(val || 0).toLocaleString("vi-VN") + "đ";
 
   const productUrl = `/products/${product?.slug || product?.id}`;
+  
+  // Thống nhất cách tính giá: price luôn là giá gốc, salePrice là giá sau giảm
   const price = Number(product?.price || 0);
-  const salePrice = product?.sale_price ? Number(product.sale_price) : null;
-  const isSale = salePrice && salePrice < price;
+  const salePrice =
+    product?.salePrice !== undefined && product?.salePrice !== null
+      ? Number(product.salePrice)
+      : (product?.sale_price ? Number(product.sale_price) : null);
+  const hasSale = Boolean(salePrice !== null && salePrice > 0 && salePrice < price);
+  const finalPrice = hasSale ? salePrice : price; // Giá thực tế phải trả
 
   return (
     <div className="bg-white rounded-2xl shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col justify-between group overflow-hidden relative border border-gray-100 hover:-translate-y-1 p-2.5 sm:p-3">
@@ -35,8 +43,8 @@ export default function ProductCard({ product, onAddToCart }) {
           </div>
         )}
 
-        {/* Huy hiệu giảm giá */}
-        {isSale && (
+        {/* Huy hiệu giảm giá (%) */}
+        {hasSale && (
           <div className="absolute top-2 right-2 z-10 bg-red-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
             -{Math.round(((price - salePrice) / price) * 100)}%
           </div>
@@ -44,12 +52,18 @@ export default function ProductCard({ product, onAddToCart }) {
 
         {/* Link chi tiết */}
         <Link href={productUrl} className="w-full h-full flex items-center justify-center">
-          <img
-            src={imgSrc}
-            alt={product?.name || "Hoa tươi"}
-            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-            onError={() => setImgSrc("/images/hoa.jpg")}
-          />
+          {!imgSrc || hasImgError ? (
+            <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400">
+              <ImageIcon className="w-12 h-12 text-gray-300" />
+            </div>
+          ) : (
+            <img
+              src={imgSrc}
+              alt={product?.name || "Hoa tươi"}
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+              onError={() => setHasImgError(true)}
+            />
+          )}
         </Link>
 
         {/* Nút thao tác nhanh khi hover */}
@@ -58,7 +72,7 @@ export default function ProductCard({ product, onAddToCart }) {
             type="button"
             onClick={(e) => {
               e.preventDefault();
-              if (onAddToCart) onAddToCart({ ...product, image: imgSrc });
+              if (onAddToCart) onAddToCart({ ...product, price, salePrice: hasSale ? salePrice : null, image: imgSrc });
             }}
             className="flex-1 flex items-center justify-center gap-1.5 text-xs font-bold hover:text-yellow-200 cursor-pointer"
           >
@@ -86,13 +100,15 @@ export default function ProductCard({ product, onAddToCart }) {
         </Link>
 
         <div className="flex items-center justify-center gap-2">
-          {isSale && (
+          {/* Giá gạch ngang = giá gốc khi có sale */}
+          {hasSale && (
             <span className="text-[11px] text-gray-400 line-through">
               {formatMoney(price)}
             </span>
           )}
+          {/* Giá phải trả */}
           <span className="text-xs sm:text-[15px] font-extrabold text-[#e50914]">
-            {formatMoney(isSale ? salePrice : price)}
+            {formatMoney(finalPrice)}
           </span>
         </div>
       </div>

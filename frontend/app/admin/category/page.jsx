@@ -5,14 +5,41 @@ import { getCategories, deleteCategory } from "@/services/categoryServices";
 import { RefreshCw, Trash2, Plus, Edit2, Folder, Layers, Image as ImageIcon } from "lucide-react";
 
 const getImageUrl = (img) => {
-    if (!img) return "";
-    if (img.startsWith("http://") || img.startsWith("https://") || img.startsWith("blob:")) {
-        return img;
+    if (!img || typeof img !== "string") return "";
+    const trimmed = img.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("blob:") || trimmed.startsWith("data:")) {
+        return trimmed;
     }
     const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
-    const cleanPath = img.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+    const storageMatch = trimmed.match(/\/storage\/(.+)$/);
+    if (storageMatch) {
+        return `http://${hostname}:8000/storage/${storageMatch[1]}`;
+    }
+    const cleanPath = trimmed.replace(/^\/?storage\//, "").replace(/^\/+/, "");
     return `http://${hostname}:8000/storage/${cleanPath}`;
 };
+
+function CategoryRowThumb({ image, name }) {
+    const [hasError, setHasError] = useState(false);
+
+    useEffect(() => {
+        setHasError(false);
+    }, [image]);
+
+    const src = getImageUrl(image);
+    if (!image || hasError || !src) {
+        return <ImageIcon className="w-4 h-4 text-gray-300" />;
+    }
+    return (
+        <img
+            src={src}
+            alt={name || "Danh mục"}
+            className="w-full h-full object-cover"
+            onError={() => setHasError(true)}
+        />
+    );
+}
 
 function CategoryContent() {
     const router = useRouter();
@@ -144,19 +171,7 @@ function CategoryContent() {
                       {/* Hình ảnh */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden bg-white shrink-0 mx-auto flex items-center justify-center">
-                          {item.image ? (
-                            <img
-                              src={getImageUrl(item.image)}
-                              alt={item.name || "Danh mục"}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                e.currentTarget.onerror = null;
-                                e.currentTarget.src = "/images/hoa.jpg";
-                              }}
-                            />
-                          ) : (
-                            <ImageIcon className="w-4 h-4 text-gray-300" />
-                          )}
+                          <CategoryRowThumb image={item.image} name={item.name} />
                         </div>
                       </td>
 

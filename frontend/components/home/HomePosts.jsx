@@ -2,39 +2,42 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Calendar, BookOpen } from "lucide-react";
+import { ArrowRight, Calendar, Image as ImageIcon } from "lucide-react";
 import { getPublicPosts } from "@/services/postServices";
 
-// Dữ liệu mẫu dự phòng khi database chưa có bài viết
-const SAMPLE_POSTS = [
-  {
-    id: 1,
-    title: "Ý nghĩa của hoa hồng theo từng màu sắc trong tình yêu",
-    slug: "y-nghia-hoa-hong-theo-tung-mau-sac",
-    summary: "Mỗi màu sắc của hoa hồng lại mang một thông điệp tình cảm riêng biệt. Hãy khám phá để chọn được bó hoa hoàn hảo nhất cho người thương.",
-    image: "/images/hoa.jpg",
-    created_at: "2026-04-20",
-    topic: { name: "Ý nghĩa hoa" },
-  },
-  {
-    id: 2,
-    title: "Cách giữ hoa tươi lâu tại nhà đơn giản và hiệu quả nhất",
-    slug: "cach-giu-hoa-tuoi-lau-tai-nha",
-    summary: "Bí quyết đơn giản giúp bình hoa của bạn luôn tươi tắn trên 7 ngày: từ cách tỉa cành, thay nước đến mẹo pha dinh dưỡng tự nhiên.",
-    image: "/images/hoa.jpg",
-    created_at: "2026-04-18",
-    topic: { name: "Mẹo chăm hoa" },
-  },
-  {
-    id: 3,
-    title: "Top 5 mẫu hoa khai trương hồng phát mang lại may mắn 2026",
-    slug: "top-5-mau-hoa-khai-truong-hong-phat",
-    summary: "Hoa khai trương không chỉ là món quà chúc mừng mà còn mang ý nghĩa phong thủy tài lộc, giúp công việc kinh doanh khởi sắc rực rỡ.",
-    image: "/images/hoa.jpg",
-    created_at: "2026-04-15",
-    topic: { name: "Xu hướng hoa" },
-  },
-];
+function PostImage({ src, alt }) {
+  const [hasError, setHasError] = useState(false);
+
+  const getImageUrl = (img) => {
+    if (!img) return "";
+    const s = String(img).trim();
+    if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("/images/")) {
+      return s;
+    }
+    const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
+    const clean = s.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+    return `http://${hostname}:8000/storage/${clean}`;
+  };
+
+  const url = getImageUrl(src);
+
+  if (!src || hasError || !url) {
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <ImageIcon className="w-10 h-10 text-gray-300" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export default function HomePosts() {
   const [posts, setPosts] = useState([]);
@@ -48,11 +51,11 @@ export default function HomePosts() {
         if (Array.isArray(data) && data.length > 0) {
           setPosts(data.slice(0, 3));
         } else {
-          setPosts(SAMPLE_POSTS);
+          setPosts([]);
         }
       } catch (err) {
         console.error("Lỗi lấy bài viết:", err);
-        setPosts(SAMPLE_POSTS);
+        setPosts([]);
       } finally {
         setLoading(false);
       }
@@ -60,20 +63,6 @@ export default function HomePosts() {
 
     void fetchPosts();
   }, []);
-
-  const getImageUrl = (src) => {
-    if (!src) return "/images/hoa.jpg";
-    const s = String(src).trim();
-    if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:")) {
-      return s;
-    }
-    if (s.startsWith("/images/")) {
-      return s;
-    }
-    const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
-    const clean = s.replace(/^\/?storage\//, "").replace(/^\/+/, "");
-    return `http://${hostname}:8000/storage/${clean}`;
-  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "Mới cập nhật";
@@ -90,7 +79,9 @@ export default function HomePosts() {
     }
   };
 
-  const list = posts.length > 0 ? posts : SAMPLE_POSTS;
+  // Nếu đang tải hoặc không có bài viết thực tế thì ẩn khu vực này
+  if (loading) return null;
+  if (posts.length === 0) return null;
 
   return (
     <section className="space-y-5 pt-4 pb-2">
@@ -112,7 +103,7 @@ export default function HomePosts() {
 
       {/* Danh sách 3 bài viết dạng lưới */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {list.map((item) => {
+        {posts.map((item) => {
           const postUrl = `/posts/${item.slug || item.id}`;
           const topicName = item.topic?.name || "Tin tức";
 
@@ -123,15 +114,7 @@ export default function HomePosts() {
             >
               {/* Hình ảnh bài viết */}
               <Link href={postUrl} className="relative block h-48 overflow-hidden bg-gray-50">
-                <img
-                  src={getImageUrl(item.image)}
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = "/images/hoa.jpg";
-                  }}
-                />
+                <PostImage src={item.image} alt={item.title} />
                 <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-xs text-[#8b5cf6] text-[11px] font-bold px-2.5 py-1 rounded-full shadow-xs">
                   {topicName}
                 </span>

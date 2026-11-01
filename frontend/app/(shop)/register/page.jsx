@@ -72,7 +72,7 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Nhập họ và tên..."
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#f68b1f]"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
             />
           </div>
 
@@ -86,7 +86,7 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Nhập email..."
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#f68b1f]"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
             />
           </div>
 
@@ -99,7 +99,7 @@ export default function RegisterPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Nhập số điện thoại (tùy chọn)..."
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#f68b1f]"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
             />
           </div>
 
@@ -113,14 +113,14 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Mật khẩu ít nhất 6 ký tự..."
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-[#f68b1f]"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-[#f68b1f] hover:bg-[#e67300] text-white font-semibold rounded text-sm transition-colors disabled:opacity-50 cursor-pointer"
+            className="w-full py-2.5 bg-[#B83A63] hover:bg-[#9E2F54] text-white font-semibold rounded text-sm transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
           >
             {loading ? "Đang xử lý..." : "Đăng ký"}
           </button>
@@ -128,7 +128,7 @@ export default function RegisterPage() {
 
         <p className="mt-4 text-center text-sm text-gray-600">
           Đã có tài khoản?{" "}
-          <Link href="/login" className="text-[#f68b1f] font-semibold hover:underline">
+          <Link href="/login" className="text-[#B83A63] hover:text-[#9E2F54] font-semibold hover:underline">
             Đăng nhập ngay
           </Link>
         </p>

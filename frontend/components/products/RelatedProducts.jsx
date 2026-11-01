@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/services/productServices";
+import { formatProduct } from "@/lib/product";
 
 export default function RelatedProducts({ currentProductId, categoryId, onAddToCart }) {
   const [products, setProducts] = useState([]);
@@ -21,7 +22,7 @@ export default function RelatedProducts({ currentProductId, categoryId, onAddToC
         });
 
         const list = Array.isArray(res) ? res : res?.data || [];
-        setProducts(list);
+        setProducts(list.map(formatProduct));
       } catch (error) {
         console.error("Lỗi tải sản phẩm liên quan:", error);
       } finally {

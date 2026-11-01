@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
 use App\Http\Resources\CategoryResource;
 use App\Models\Category;
+use App\Models\Product;
+use App\Models\ProductSale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -161,7 +164,16 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
 
-        if ($category->image) {
+        $productCount = Product::withTrashed()->where('category_id', $category->id)->count();
+        if ($productCount > 0) {
+            return response()->json([
+                'message' => "Danh mục còn {$productCount} sản phẩm, hãy chuyển hoặc xóa vĩnh viễn sản phẩm trước",
+            ], 422);
+        }
+
+        Category::where('parent_id', $category->id)->update(['parent_id' => null]);
+
+        if ($category->image && Storage::disk('public')->exists($category->image)) {
             Storage::disk('public')->delete($category->image);
         }
 

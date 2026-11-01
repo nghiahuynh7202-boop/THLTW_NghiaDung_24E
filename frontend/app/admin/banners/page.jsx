@@ -16,6 +16,22 @@ const resolveImgUrl = (rawImg) => {
   return `http://${hostname}:8000/storage/${clean}`;
 };
 
+function BannerRowImage({ image }) {
+  const [hasError, setHasError] = useState(false);
+  const src = resolveImgUrl(image);
+  if (!src || hasError) {
+    return <ImageIcon className="w-6 h-6 text-slate-300" />;
+  }
+  return (
+    <img
+      src={src}
+      alt="Banner"
+      className="w-full h-full object-cover"
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -248,14 +264,7 @@ export default function AdminBannersPage() {
                       </td>
                       <td className="py-3 px-4">
                         <div className="w-44 h-16 rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
-                          <img
-                            src={resolveImgUrl(item.image)}
-                            alt="Banner"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.src = "/images/hoa.jpg";
-                            }}
-                          />
+                          <BannerRowImage image={item.image} />
                         </div>
                       </td>
                       <td className="py-3 px-4 font-mono text-slate-700 text-[11px]">

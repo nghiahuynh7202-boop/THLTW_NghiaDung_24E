@@ -86,9 +86,11 @@ function UpdateCategoryContent() {
 
                 if (c.image) {
                     const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
-                    const imgUrl = String(c.image).startsWith("http")
-                        ? c.image
-                        : `http://${hostname}:8000/storage/${String(c.image).replace(/^\/?storage\//, "")}`;
+                    const trimmed = String(c.image).trim();
+                    const storageMatch = trimmed.match(/\/storage\/(.+)$/);
+                    const imgUrl = storageMatch
+                        ? `http://${hostname}:8000/storage/${storageMatch[1]}`
+                        : `http://${hostname}:8000/storage/${trimmed.replace(/^\/?storage\//, "").replace(/^\/+/, "")}`;
                     setPreview(imgUrl);
                 }
             }

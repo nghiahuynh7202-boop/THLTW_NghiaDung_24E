@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Calendar, ArrowRight, BookOpen } from "lucide-react";
+import { Calendar, ArrowRight, BookOpen, Image as ImageIcon } from "lucide-react";
 import { getPublicPosts } from "@/services/postServices";
 
 // Xử lý link ảnh bài viết
 const resolveImgUrl = (rawImg) => {
   const raw = rawImg ? String(rawImg).trim() : "";
-  if (!raw) return "/images/hoa.jpg";
+  if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:") || raw.startsWith("/images/")) {
     return raw;
   }
@@ -16,6 +16,26 @@ const resolveImgUrl = (rawImg) => {
   const clean = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
   return `http://${hostname}:8000/storage/${clean}`;
 };
+
+function PostThumbnail({ src, alt }) {
+  const [hasError, setHasError] = useState(false);
+  const url = resolveImgUrl(src);
+  if (!src || hasError || !url) {
+    return (
+      <div className="w-full h-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <ImageIcon className="w-10 h-10 text-gray-300" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export default function PostsPage() {
   const [posts, setPosts] = useState([]);
@@ -86,14 +106,7 @@ export default function PostsPage() {
                 >
                   {/* Ảnh đại diện bài viết */}
                   <Link href={postUrl} className="relative block h-48 overflow-hidden bg-gray-100">
-                    <img
-                      src={resolveImgUrl(item.image)}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/hoa.jpg";
-                      }}
-                    />
+                    <PostThumbnail src={item.image} alt={item.title} />
                     <span className="absolute top-3 left-3 bg-[#f68b1f] text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider shadow">
                       {topicName}
                     </span>

@@ -8,16 +8,13 @@ import {
   Zap,
   Phone,
   Truck,
-  ShieldCheck,
-  RotateCcw,
   Camera,
   Gift,
-  Heart,
-  Share2,
   ChevronRight,
   Plus,
   Minus,
   CheckCircle2,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import Toast from "@/components/home/Toast";
@@ -36,31 +33,30 @@ export default function ProductDetail({ product }) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("desc");
 
-  // Normalize product data
   const name = product?.name || product?.product_name || "Sản phẩm hoa tươi";
-  const rawPrice = Number(product?.price) || 0;
-  const rawSalePrice = product?.sale_price ? Number(product.sale_price) : null;
-  const hasSale = rawSalePrice !== null && rawSalePrice > 0 && rawSalePrice < rawPrice;
-  const currentPrice = hasSale ? rawSalePrice : rawPrice;
-  const originalPrice = hasSale ? rawPrice : (product?.originalPrice ? Number(product.originalPrice) : null);
-  const discountPercent = originalPrice && originalPrice > currentPrice
-    ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
-    : 0;
+  // Thống nhất cách tính giá: price luôn là giá gốc, salePrice là giá sau giảm
+  const price = Number(product?.price || 0);
+  const salePrice =
+    product?.salePrice !== undefined && product?.salePrice !== null
+      ? Number(product.salePrice)
+      : (product?.sale_price ? Number(product.sale_price) : null);
+  const hasSale = Boolean(salePrice !== null && salePrice > 0 && salePrice < price);
+  const currentPrice = hasSale ? salePrice : price; // Giá phải trả
+  const discountPercent = hasSale ? Math.round(((price - salePrice) / price) * 100) : 0;
 
   const rawImage = product?.image || "";
-  const [imgSrc, setImgSrc] = useState(() => {
-    if (!rawImage) return "/images/hoa.jpg";
-    const s = String(rawImage).trim();
-    if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:")) {
-      return s;
-    }
-    if (s.startsWith("/images/")) {
+  const [hasImgError, setHasImgError] = useState(false);
+  const getImageUrl = (raw) => {
+    if (!raw) return "";
+    const s = String(raw).trim();
+    if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("/images/")) {
       return s;
     }
     const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
     const clean = s.replace(/^\/?storage\//, "").replace(/^\/+/, "");
     return `http://${hostname}:8000/storage/${clean}`;
-  });
+  };
+  const imgSrc = getImageUrl(rawImage);
 
   const categoryName = product?.category?.name || product?.category_name || "Hoa tươi";
   const categoryId = product?.category?.id || product?.category_id || product?.cat_id;
@@ -75,22 +71,36 @@ export default function ProductDetail({ product }) {
       ...product,
       id: product?.id,
       name,
-      price: currentPrice,
-      originalPrice,
-      image: rawImage || "/images/hoa.jpg",
+      price,
+      salePrice: hasSale ? salePrice : null,
+      image: rawImage || "",
     };
-    addToCart(itemToAdd, quantity);
-    toast.show(`Đã thêm ${quantity} x "${name}" vào giỏ hàng!`);
+    const ok = addToCart(itemToAdd, quantity);
+    if (ok) {
+      toast.show(`Đã thêm ${quantity} x "${name}" vào giỏ hàng!`);
+    }
   };
 
   const handleAddRelatedToCart = (item) => {
-    addToCart(item, 1);
-    toast.show(`Đã thêm "${item.name}" vào giỏ hàng!`);
+    const ok = addToCart(item, 1);
+    if (ok) {
+      toast.show(`Đã thêm "${item.name}" vào giỏ hàng!`);
+    }
   };
 
   const handleBuyNow = () => {
-    handleAddToCart();
-    router.push("/cart");
+    const itemToAdd = {
+      ...product,
+      id: product?.id,
+      name,
+      price,
+      salePrice: hasSale ? salePrice : null,
+      image: rawImage || "",
+    };
+    const ok = addToCart(itemToAdd, quantity);
+    if (ok) {
+      router.push("/cart");
+    }
   };
 
   return (
@@ -130,12 +140,18 @@ export default function ProductDetail({ product }) {
           {/* CỘT TRÁI: HÌNH ẢNH */}
           <div className="lg:col-span-5 space-y-4">
             <div className="relative aspect-[4/4.8] w-full bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs flex items-center justify-center group">
-              <img
-                src={imgSrc}
-                alt={name}
-                className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
-                onError={() => setImgSrc("/images/hoa.jpg")}
-              />
+              {!imgSrc || hasImgError ? (
+                <div className="w-full h-full bg-gray-50 flex items-center justify-center text-gray-400">
+                  <ImageIcon className="w-16 h-16 text-gray-300" />
+                </div>
+              ) : (
+                <img
+                  src={imgSrc}
+                  alt={name}
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500 ease-out"
+                  onError={() => setHasImgError(true)}
+                />
+              )}
 
               {discountPercent > 0 && (
                 <span className="absolute top-3.5 left-3.5 bg-gradient-to-r from-red-600 to-rose-500 text-white text-xs font-black px-3 py-1 rounded-full shadow-md">
@@ -190,12 +206,12 @@ export default function ProductDetail({ product }) {
               <span className="text-2xl sm:text-3xl font-black text-[#ff3d00] tracking-tight">
                 {formatPrice(currentPrice)}
               </span>
-              {originalPrice && originalPrice > currentPrice && (
+              {hasSale && (
                 <span className="text-sm sm:text-base text-gray-400 line-through font-normal">
-                  {formatPrice(originalPrice)}
+                  {formatPrice(price)}
                 </span>
               )}
-              {discountPercent > 0 && (
+              {hasSale && discountPercent > 0 && (
                 <span className="text-xs font-bold text-red-600 bg-red-100/80 px-2.5 py-0.5 rounded-full">
                   Tiết kiệm {discountPercent}%
                 </span>

@@ -3,13 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Calendar, User, ArrowLeft, Tag } from "lucide-react";
+import { Calendar, User, ArrowLeft, Tag, Image as ImageIcon } from "lucide-react";
 import { getPostById } from "@/services/postServices";
 
 // Xử lý link ảnh
 const resolveImgUrl = (rawImg) => {
   const raw = rawImg ? String(rawImg).trim() : "";
-  if (!raw) return "/images/hoa.jpg";
+  if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("blob:") || raw.startsWith("/images/")) {
     return raw;
   }
@@ -24,6 +24,7 @@ export default function PostDetailPage() {
 
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     async function loadDetail() {
@@ -110,15 +111,19 @@ export default function PostDetailPage() {
 
         {/* Ảnh đại diện bài viết */}
         {post.image && (
-          <div className="rounded-xl overflow-hidden mb-6 bg-gray-100">
-            <img
-              src={resolveImgUrl(post.image)}
-              alt={post.title}
-              className="w-full max-h-[420px] object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "/images/hoa.jpg";
-              }}
-            />
+          <div className="rounded-xl overflow-hidden mb-6 bg-gray-100 flex items-center justify-center min-h-[160px]">
+            {imgError ? (
+              <div className="py-12 flex flex-col items-center justify-center text-gray-400">
+                <ImageIcon className="w-12 h-12 text-gray-300 mb-1" />
+              </div>
+            ) : (
+              <img
+                src={resolveImgUrl(post.image)}
+                alt={post.title}
+                className="w-full max-h-[420px] object-cover"
+                onError={() => setImgError(true)}
+              />
+            )}
           </div>
         )}
 

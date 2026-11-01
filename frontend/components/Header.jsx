@@ -5,11 +5,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ShoppingBag, User, ChevronDown, Menu, X, LogOut, LogIn, UserPlus } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Header() {
     const router = useRouter();
     const { totalCount } = useCart();
-    const [user, setUser] = useState(null);
+    const { user, logout } = useAuth();
     const [isMounted, setIsMounted] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [accountMenuOpen, setAccountMenuOpen] = useState(false);
@@ -29,23 +30,12 @@ export default function Header() {
 
     useEffect(() => {
         setIsMounted(true);
-        try {
-            const savedUser = localStorage.getItem("user");
-            if (savedUser) {
-                setUser(JSON.parse(savedUser));
-            }
-        }
-        catch {
-            // ignore
-        }
     }, []);
 
     const currentUser = isMounted ? user : null;
     const currentCartCount = isMounted ? totalCount : 0;
     const handleLogout = () => {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("user");
-        setUser(null);
+        logout();
         setAccountMenuOpen(false);
         alert("Đã đăng xuất thành công!");
         router.push("/login");

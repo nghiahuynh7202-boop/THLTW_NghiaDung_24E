@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { getProductBySlug } from "@/services/productServices";
+import { formatProduct } from "@/lib/product";
 import ProductDetail from "@/components/products/ProductDetail";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -27,7 +28,7 @@ export default function ProductDetailPage() {
         const productData = res?.data || res;
         
         if (productData && Object.keys(productData).length > 0) {
-          setProduct(productData);
+          setProduct(formatProduct(productData));
         } else {
           setError("Không tìm thấy sản phẩm");
         }

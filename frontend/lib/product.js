@@ -1,25 +1,26 @@
+// Chuẩn hóa sản phẩm: price luôn là giá gốc, salePrice là giá sau giảm (null nếu không có sale)
 export function formatProduct(p) {
   if (!p) return null;
   const price = Number(p.price || 0);
-  const salePrice =
+  const rawSale =
     p.sale_price !== null && p.sale_price !== undefined && p.sale_price !== ""
       ? Number(p.sale_price)
       : null;
-  const hasSale = salePrice !== null && salePrice > 0 && salePrice < price;
+  const hasSale = rawSale !== null && rawSale > 0 && rawSale < price;
 
   return {
     ...p,
     id: p.id,
     name: p.name || "",
     slug: p.slug || String(p.id),
-    // Giá so sánh là giá bán thực tế, tức đã trừ khuyến mãi
-    price: hasSale ? salePrice : price,
-    originalPrice: hasSale ? price : null,
-    image: p.image || "/images/hoa.jpg",
+    price: price, // Luôn luôn là giá gốc
+    salePrice: hasSale ? rawSale : null, // Giá sau giảm (null nếu không có sale)
+    image: p.image || "",
     category_id: p.category_id,
     category: p.category,
     brand_id: p.brand_id,
     brand: p.brand,
+    is_featured: Number(p.is_featured ?? 0) === 1,
     created_at: p.created_at,
   };
 }

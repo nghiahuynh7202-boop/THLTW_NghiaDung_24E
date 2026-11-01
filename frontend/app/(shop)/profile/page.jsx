@@ -19,18 +19,35 @@ import {
   CreditCard,
   Banknote,
   RefreshCw,
+  Image as ImageIcon,
 } from "lucide-react";
 
 // Hàm xử lý đường dẫn ảnh sản phẩm
 const resolveImgUrl = (rawImg) => {
   const raw = rawImg ? String(rawImg).trim() : "";
-  if (!raw) return "/images/hoa.jpg";
+  if (!raw) return "";
   if (raw.startsWith("http://") || raw.startsWith("https://") || raw.startsWith("/images/")) {
     return raw;
   }
   const clean = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
   return `${API_CONFIG.ROOT_URL}/storage/${clean}`;
 };
+
+function ProfileItemThumb({ src, alt }) {
+  const [hasError, setHasError] = useState(false);
+  const url = resolveImgUrl(src);
+  if (!src || hasError || !url) {
+    return <ImageIcon className="w-5 h-5 text-gray-300" />;
+  }
+  return (
+    <img
+      src={url}
+      alt={alt || "Hoa tươi"}
+      className="w-full h-full object-contain"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 /**
  * File này làm gì: Trang cá nhân người dùng (Profile).
@@ -106,7 +123,7 @@ export default function ProfilePage() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-4 font-sans">
         <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center max-w-md w-full">
-          <div className="w-16 h-16 bg-orange-100 text-[#f68b1f] rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-pink-100 text-[#B83A63] rounded-full flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8" />
           </div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">Chưa đăng nhập</h2>
@@ -115,7 +132,7 @@ export default function ProfilePage() {
           </p>
           <Link
             href="/login"
-            className="inline-block w-full py-2.5 px-4 bg-[#f68b1f] hover:bg-[#e67300] text-white font-medium rounded-lg transition"
+            className="inline-block w-full py-2.5 px-4 bg-[#B83A63] hover:bg-[#9E2F54] text-white font-medium rounded-lg transition shadow-xs"
           >
             Đăng nhập ngay
           </Link>
@@ -130,9 +147,9 @@ export default function ProfilePage() {
         
         {/* Header thông tin tài khoản */}
         <div className="bg-white rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-orange-400 to-[#f68b1f] p-6 text-white text-center sm:text-left sm:flex sm:items-center sm:justify-between">
+          <div className="bg-gradient-to-r from-[#B83A63] to-[#9E2F54] p-6 text-white text-center sm:text-left sm:flex sm:items-center sm:justify-between">
             <div className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-white text-[#f68b1f] font-bold text-2xl flex items-center justify-center shadow">
+              <div className="w-16 h-16 rounded-full bg-white text-[#B83A63] font-bold text-2xl flex items-center justify-center shadow">
                 {user.name ? user.name.trim().charAt(0).toUpperCase() : "U"}
               </div>
               <div>
@@ -160,7 +177,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab("profile")}
               className={`flex-1 py-3 px-4 text-xs font-bold transition flex items-center justify-center gap-2 border-b-2 cursor-pointer ${
                 activeTab === "profile"
-                  ? "border-[#f68b1f] text-[#f68b1f] bg-orange-50/30"
+                  ? "border-[#B83A63] text-[#B83A63] bg-pink-50/40"
                   : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
@@ -173,7 +190,7 @@ export default function ProfilePage() {
               onClick={() => setActiveTab("orders")}
               className={`flex-1 py-3 px-4 text-xs font-bold transition flex items-center justify-center gap-2 border-b-2 cursor-pointer ${
                 activeTab === "orders"
-                  ? "border-[#f68b1f] text-[#f68b1f] bg-orange-50/30"
+                  ? "border-[#B83A63] text-[#B83A63] bg-pink-50/40"
                   : "border-transparent text-gray-500 hover:text-gray-800"
               }`}
             >
@@ -258,7 +275,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={() => fetchMyOrders(user.id)}
-                className="text-xs text-[#f68b1f] hover:underline inline-flex items-center gap-1 font-semibold cursor-pointer"
+                className="text-xs text-[#B83A63] hover:text-[#9E2F54] inline-flex items-center gap-1 font-semibold cursor-pointer"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${loadingOrders ? "animate-spin" : ""}`} />
                 <span>Làm mới</span>
@@ -280,7 +297,7 @@ export default function ProfilePage() {
                 </p>
                 <Link
                   href="/"
-                  className="inline-block py-2 px-5 bg-[#f68b1f] text-white text-xs font-bold rounded-lg"
+                  className="inline-block py-2 px-5 bg-[#B83A63] hover:bg-[#9E2F54] text-white text-xs font-bold rounded-lg shadow-xs transition"
                 >
                   Khám phá hoa tươi ngay
                 </Link>
@@ -330,14 +347,7 @@ export default function ProfilePage() {
                           <div key={idx} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3">
                               <div className="w-12 h-12 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center shrink-0">
-                                <img
-                                  src={resolveImgUrl(item.product?.image)}
-                                  alt={item.product?.name || "Hoa tươi"}
-                                  className="w-full h-full object-contain"
-                                  onError={(e) => {
-                                    e.currentTarget.src = "/images/hoa.jpg";
-                                  }}
-                                />
+                                <ProfileItemThumb src={item.product?.image} alt={item.product?.name} />
                               </div>
                               <div>
                                 <h4 className="text-xs sm:text-sm font-semibold text-gray-800 line-clamp-1">
@@ -368,7 +378,7 @@ export default function ProfilePage() {
 
                         <div className="text-right">
                           <span className="text-xs text-gray-500">Tổng thanh toán: </span>
-                          <span className="text-base font-extrabold text-[#d32f2f]">
+                          <span className="text-base font-extrabold text-[#B83A63]">
                             {formatMoney(order.total)}
                           </span>
                         </div>

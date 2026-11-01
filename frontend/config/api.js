@@ -14,7 +14,9 @@ const getRootUrl = () => {
 
 // Cấu hình tài khoản ngân hàng chuyển khoản tự động SePay / VietQR
 export const BANK_CONFIG = {
-    BANK_NAME: process.env.NEXT_PUBLIC_BANK_NAME || "ACB",
+    BANK_NAME: process.env.NEXT_PUBLIC_BANK_NAME || "ACB (Ngân hàng Á Châu)",
+    BANK_CODE: process.env.NEXT_PUBLIC_BANK_CODE || "ACB",
+    ACCOUNT_NUMBER: process.env.NEXT_PUBLIC_BANK_ACCOUNT || "18900291",
     BANK_ACCOUNT: process.env.NEXT_PUBLIC_BANK_ACCOUNT || "18900291",
     ACCOUNT_NAME: process.env.NEXT_PUBLIC_BANK_ACCOUNT_NAME || "DAO DUY DUNG",
 };

@@ -5,11 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OrderRequest;
 use App\Http\Resources\OrderResource;
-use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderDetail;
 use App\Models\Product;
 use App\Models\ProductSale;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -76,9 +76,14 @@ class OrderController extends Controller
             $shippingFee    = (int) ($validated['shipping_fee'] ?? 0);
             $total          = max(0, $subtotal - $discountAmount + $shippingFee);
 
-            // 3. Tạo đơn hàng
+            // 3. Tạo đơn hàng (nếu user_id không tồn tại trong DB thì gán null để tránh lỗi khóa ngoại)
+            $userId = $validated['user_id'] ?? $request->user()?->id;
+            if ($userId && !User::where('id', $userId)->exists()) {
+                $userId = null;
+            }
+
             $order = Order::create([
-                'user_id'         => $validated['user_id'] ?? $request->user()?->id,
+                'user_id'         => $userId,
                 'name'            => $validated['name'],
                 'phone'           => $validated['phone'],
                 'email'           => $validated['email'] ?? null,
@@ -102,12 +107,6 @@ class OrderController extends Controller
             // 5. Tăng số lần sử dụng mã giảm giá nếu có
             if (! empty($validated['coupon_code'])) {
                 ProductSale::where('code', $validated['coupon_code'])->increment('used_count');
-            }
-
-            // 6. Xóa giỏ hàng database nếu người dùng đã đăng nhập
-            if (! empty($order->user_id)) {
-                $orderedProductIds = array_column($items, 'product_id');
-                Cart::where('user_id', $order->user_id)->whereIn('product_id', $orderedProductIds)->delete();
             }
 
             return $order;

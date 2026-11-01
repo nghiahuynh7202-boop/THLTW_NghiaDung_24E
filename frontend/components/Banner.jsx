@@ -9,7 +9,7 @@ import { getPublicBanners } from "@/services/bannerServices";
 // Xử lý link ảnh từ backend Laravel
 const resolveImgUrl = (rawImg) => {
   const raw = rawImg ? String(rawImg).trim() : "";
-  if (!raw) return "/images/hoa.jpg";
+  if (!raw) return "";
   if (
     raw.startsWith("http://") ||
     raw.startsWith("https://") ||
@@ -25,6 +25,30 @@ const resolveImgUrl = (rawImg) => {
   const clean = raw.replace(/^\/?storage\//, "").replace(/^\/+/, "");
   return `http://${hostname}:8000/storage/${clean}`;
 };
+
+function BannerSlideImage({ banner }) {
+  const [hasError, setHasError] = useState(false);
+  const src = resolveImgUrl(banner?.image);
+
+  if (!src || hasError) {
+    return (
+      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-50">
+        <ImageIcon className="w-12 h-12 mb-2 text-gray-300" />
+        <p className="text-sm font-semibold">Chưa có ảnh banner.</p>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      key={banner.id}
+      src={src}
+      alt="Banner"
+      className="w-full h-full object-cover object-center transition-all duration-700 ease-in-out animate-in fade-in"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export default function Banner() {
   const router = useRouter();
@@ -100,15 +124,7 @@ export default function Banner() {
                 href={currentBanner.link || "/products"}
                 className="block w-full h-full"
               >
-                <img
-                  key={currentBanner.id}
-                  src={resolveImgUrl(currentBanner.image)}
-                  alt="Banner"
-                  className="w-full h-full object-cover object-center transition-all duration-700 ease-in-out animate-in fade-in"
-                  onError={(e) => {
-                    e.currentTarget.src = "/images/hoa.jpg";
-                  }}
-                />
+                <BannerSlideImage banner={currentBanner} />
               </Link>
             </div>
           ) : (

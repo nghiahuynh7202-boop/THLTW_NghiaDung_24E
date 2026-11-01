@@ -100,13 +100,14 @@ class ProductController extends Controller
             unset($data['image']);
         }
 
-        $salePrice = $data['sale_price'] ?? null;
-        unset($data['sale_price']);
+        $hasSale = $request->input('is_on_sale') !== '0' && $request->input('is_on_sale') !== 0;
+        $salePrice = $data['sale_price'] ?? $request->input('sale_price');
+        unset($data['sale_price'], $data['is_on_sale']);
 
         $product->update($data);
 
-        // Cập nhật giá khuyến mãi
-        if ($salePrice !== null && (float) $salePrice > 0) {
+        // Cập nhật hoặc xóa giá khuyến mãi
+        if ($hasSale && $salePrice !== null && $salePrice !== '' && (float) $salePrice > 0) {
             ProductSale::updateOrCreate(
                 ['product_id' => $product->id, 'apply_to' => 'product'],
                 [
@@ -117,6 +118,10 @@ class ProductController extends Controller
                     'status'     => 1,
                 ]
             );
+        } else {
+            ProductSale::where('product_id', $product->id)
+                ->where('apply_to', 'product')
+                ->delete();
         }
 
         return (new ProductResource($product->load(['category', 'brand', 'sales'])))

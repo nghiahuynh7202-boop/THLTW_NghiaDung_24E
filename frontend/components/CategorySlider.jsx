@@ -2,8 +2,54 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 import { getPublicCategories, getCategories } from "@/services/categoryServices";
+
+// Chuẩn hóa link ảnh để hiển thị ảnh từ backend
+const getValidImageUrl = (img) => {
+  if (!img || typeof img !== "string" || img.trim() === "") return "";
+  const trimmed = img.trim();
+  if (trimmed.startsWith("blob:") || trimmed.startsWith("data:")) {
+    return trimmed;
+  }
+  if (trimmed.startsWith("/") && !trimmed.startsWith("/storage/")) return trimmed;
+
+  // Lấy hostname hiện tại để ảnh luôn load đúng cổng backend 8000
+  const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
+  const storageMatch = trimmed.match(/\/storage\/(.+)$/);
+  if (storageMatch) {
+    return `http://${hostname}:8000/storage/${storageMatch[1]}`;
+  }
+  const cleanPath = trimmed.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+  return `http://${hostname}:8000/storage/${cleanPath}`;
+};
+
+function CategoryThumb({ img, name }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [img]);
+
+  const src = getValidImageUrl(img);
+
+  if (!img || hasError || !src) {
+    return (
+      <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+        <ImageIcon className="w-8 h-8 text-gray-300" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={name}
+      onError={() => setHasError(true)}
+      className="w-full h-full object-cover rounded-full group-hover/item:scale-105 transition-transform duration-200"
+    />
+  );
+}
 
 export default function CategorySlider() {
   const scrollRef = useRef(null);
@@ -11,21 +57,6 @@ export default function CategorySlider() {
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Chuẩn hóa link ảnh để hiển thị ảnh từ backend hoặc ảnh mặc định
-  const getValidImageUrl = (img) => {
-    if (!img || typeof img !== "string" || img.trim() === "") return "/images/hoa.jpg";
-    const trimmed = img.trim();
-    if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("blob:")) {
-      return trimmed;
-    }
-    if (trimmed.startsWith("/")) return trimmed;
-
-    // Lấy hostname hiện tại để ảnh luôn load đúng cổng backend 8000
-    const hostname = typeof window !== "undefined" ? window.location.hostname || "127.0.0.1" : "127.0.0.1";
-    const cleanPath = trimmed.replace(/^\/?storage\//, "").replace(/^\/+/, "");
-    return `http://${hostname}:8000/storage/${cleanPath}`;
-  };
 
   useEffect(() => {
     let isMounted = true;
@@ -149,15 +180,7 @@ export default function CategorySlider() {
               >
                 {/* Vòng tròn ảnh to, viền đơn giản thanh lịch (không màu mè) */}
                 <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full border-2 border-gray-200 hover:border-[#f68b1f] shadow-xs hover:shadow-md transition-all duration-200 p-1 bg-white flex items-center justify-center overflow-hidden">
-                  <img
-                    src={getValidImageUrl(cat.image)}
-                    alt={cat.name}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = "/images/hoa.jpg";
-                    }}
-                    className="w-full h-full object-cover rounded-full group-hover/item:scale-105 transition-transform duration-200"
-                  />
+                  <CategoryThumb img={cat.image} name={cat.name} />
                 </div>
 
                 {/* Tên danh mục to rõ, đều chữ */}
