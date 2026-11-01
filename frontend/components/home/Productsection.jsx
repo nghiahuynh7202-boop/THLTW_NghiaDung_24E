@@ -10,9 +10,19 @@ import { useProducts } from "@/hooks/useProducts";
 const ALL = { label: "Tất cả" };
 
 // Một khung sản phẩm dạng lưới: tiêu đề + tag lọc + lưới + nút xem thêm
-export default function ProductSection({ title, color, link, category, tags = [], onAddToCart }) {
+export default function ProductSection({
+  title,
+  color,
+  link,
+  category,
+  tags = [],
+  onAddToCart,
+}) {
   const [activeTag, setActiveTag] = useState(ALL);
-  const { products, loading } = useProducts({ category, tag: activeTag?.value });
+  const { products, loading } = useProducts({
+    category,
+    tag: activeTag?.value,
+  });
 
   return (
     <div className="space-y-4">
@@ -21,24 +31,29 @@ export default function ProductSection({ title, color, link, category, tags = []
           <span className={`w-1.5 h-4.5 ${color} rounded-full inline-block`} />
           {title}
         </h2>
-
-
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 animate-pulse">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl border border-gray-100 p-3 space-y-3">
-              <div className="w-full aspect-[4/4.8] bg-gray-100 rounded-xl" />
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5 animate-pulse">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-gray-100 p-3 space-y-3"
+            >
+              <div className="w-full aspect-[4/4.6] bg-gray-100 rounded-lg" />
               <div className="h-4 bg-gray-100 rounded-md w-3/4" />
               <div className="h-4 bg-gray-100 rounded-md w-1/2" />
             </div>
           ))}
         </div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
           {products.map((item) => (
-            <ProductCard key={item.id} product={item} onAddToCart={onAddToCart} />
+            <ProductCard
+              key={item.id}
+              product={item}
+              onAddToCart={onAddToCart}
+            />
           ))}
         </div>
       ) : (

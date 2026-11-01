@@ -45,6 +45,7 @@ class ProductRequest extends FormRequest
                 'max:2048',
                 new \App\Rules\UniqueImage('products', 'image', $productId),
             ],
+            'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:10240'],
             'description' => ['nullable', 'string'],
             // CHỨC NĂNG SẢN PHẨM NỔI BẬT: Xác thực cờ nổi bật chỉ nhận 0 (thường) hoặc 1 (nổi bật)
             'is_featured' => ['nullable', 'integer', 'in:0,1'],
@@ -75,7 +76,7 @@ class ProductRequest extends FormRequest
             'qty.min'              => 'Số lượng không được âm.',
             'image.image'          => 'File tải lên phải là hình ảnh.',
             'image.mimes'          => 'Hình ảnh phải có định dạng: jpeg, png, jpg, webp.',
-            'image.max'            => 'Dung lượng hình ảnh không được quá 2MB.',
+            'image.max'            => 'Dung lượng hình ảnh không được quá 10MB.',
             'status.in'            => 'Trạng thái chỉ nhận giá trị 0 (ẩn) hoặc 1 (hiển thị).',
         ];
     }

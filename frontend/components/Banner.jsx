@@ -113,7 +113,7 @@ export default function Banner() {
   const currentBanner = banners[activeSlide] || banners[0];
 
   return (
-    <div className="w-full mb-6 font-sans">
+    <div className="w-full font-sans">
       {/* KHỐI BANNER CHÍNH */}
       <div className="relative w-full rounded-2xl overflow-hidden border border-gray-100 shadow-sm min-h-[260px] sm:min-h-[340px] md:min-h-[400px] lg:min-h-[430px] flex items-center bg-gray-100">
         {/* NỀN SLIDE NỘI DUNG: CHỈ DÙNG ẢNH TỪ API BACKEND */}

@@ -27,7 +27,7 @@ export function formatProduct(p) {
   };
 }
 
-// Hook tải sản phẩm và lọc theo danh mục / nổi bật
+// Hook tải sản phẩm và lọc theo danh mục / nổi bật / flash sale
 export function useProducts({ category } = {}) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,19 +39,24 @@ export function useProducts({ category } = {}) {
         const rawList = res.data || res || [];
         const list = Array.isArray(rawList) ? rawList.map(formatProduct) : [];
 
-        // Lọc sản phẩm nổi bật
+        // 1. Sản phẩm nổi bật
         if (category === "featured" || category === "san-pham-noi-bat") {
           setProducts(list.filter((p) => p.is_featured));
-        } else if (category === "flash-sale") {
-          // Lấy 8 sản phẩm đầu cho mục Flash Sale
-          setProducts(list.slice(0, 8));
-        } else if (category) {
-          // Lọc theo slug hoặc id danh mục
+        } 
+        // 2. Flash Sale: CHỈ LẤY SẢN PHẨM CÓ GIÁ GIẢM (salePrice < price)
+        else if (category === "flash-sale") {
+          const saleList = list.filter((p) => p.salePrice && p.salePrice < p.price);
+          setProducts(saleList.slice(0, 8));
+        } 
+        // 3. Theo danh mục cụ thể từ CSDL
+        else if (category) {
           const filtered = list.filter(
             (p) => p.category?.slug === category || String(p.category_id) === String(category)
           );
-          setProducts(filtered.length > 0 ? filtered : list);
-        } else {
+          setProducts(filtered);
+        } 
+        // 4. Toàn bộ danh sách
+        else {
           setProducts(list);
         }
       })

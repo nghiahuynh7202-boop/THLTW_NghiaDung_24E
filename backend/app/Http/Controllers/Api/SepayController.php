@@ -12,7 +12,8 @@ class SepayController extends Controller
     // Webhook tự động nhận thông báo biến động số dư từ SePay
     public function webhook(Request $request): JsonResponse
     {
-        $content = $request->input('content', '');
+        // Lấy nội dung chuyển khoản từ mọi trường có thể có của SePay
+        $content = $request->input('content', '') . ' ' . $request->input('description', '') . ' ' . $request->input('code', '');
         $transferAmount = (int) $request->input('transferAmount', 0);
 
         // Tìm mã đơn hàng trong nội dung chuyển khoản (VD: HOA 15, DH 15)

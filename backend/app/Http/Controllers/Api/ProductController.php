@@ -28,6 +28,11 @@ class ProductController extends Controller
             $query->where('category_id', $request->input('category_id'));
         }
 
+        // Loại trừ sản phẩm đang xem (dùng cho sản phẩm liên quan)
+        if ($request->filled('exclude_id')) {
+            $query->where('id', '!=', $request->input('exclude_id'));
+        }
+
         // Lọc sản phẩm nổi bật
         if ($request->filled('is_featured')) {
             $query->where('is_featured', (int) $request->input('is_featured'));
