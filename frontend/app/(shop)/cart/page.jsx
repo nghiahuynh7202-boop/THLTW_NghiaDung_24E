@@ -6,28 +6,27 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, ArrowRight, Image as Image
 import { useCart } from "@/context/CartContext";
 import API_CONFIG from "@/config/api";
 
-function CartItemImage({ image, name }) {
-  const [hasError, setHasError] = useState(false);
-  const getImageUrl = (img) => {
-    if (!img) return "";
-    if (img.startsWith("http") || img.startsWith("blob:") || img.startsWith("/images/")) return img;
-    const clean = img.replace(/^\/?storage\//, "").replace(/^\/+/, "");
-    return `${API_CONFIG.ROOT_URL}/storage/${clean}`;
+function CartItemImage({ item, image, name }) {
+  const getImageUrl = (raw) => {
+    if (!raw) return "/images/hoa.jpg";
+    const str = String(raw).trim();
+    if (!str) return "/images/hoa.jpg";
+    if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("blob:") || str.startsWith("/images/")) {
+      return str;
+    }
+    const clean = str.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+    return `http://127.0.0.1:8000/storage/${clean}`;
   };
-  const src = getImageUrl(image);
-  if (!src || hasError) {
-    return (
-      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-md bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-400 shrink-0">
-        <ImageIcon className="w-6 h-6 text-gray-300" />
-      </div>
-    );
-  }
+
+  const rawImg = image || item?.image || item?.thumbnail || item?.image_url;
+  const [src, setSrc] = useState(() => getImageUrl(rawImg));
+
   return (
     <img
       src={src}
-      alt={name}
-      onError={() => setHasError(true)}
-      className="w-16 h-16 sm:w-20 sm:h-20 object-contain rounded-md border border-gray-100 shrink-0"
+      alt={name || item?.name || "Hoa tươi"}
+      onError={() => setSrc("/images/hoa.jpg")}
+      className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-md border border-gray-100 shrink-0"
     />
   );
 }
@@ -90,7 +89,7 @@ export default function CartPage() {
                 {cartItems.map((item) => (
                   <div key={item.id} className="p-4 sm:p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <CartItemImage image={item.image} name={item.name} />
+                      <CartItemImage item={item} image={item.image} name={item.name} />
                       <div className="min-w-0">
                         <Link href={`/products/${item.slug || item.id}`} className="text-sm font-semibold text-gray-800 hover:text-[#f68b1f] line-clamp-1">
                           {item.name}
@@ -105,11 +104,16 @@ export default function CartPage() {
                             </span>
                           )}
                         </div>
+                        {item.stock !== undefined && (
+                          <p className="text-[11px] text-gray-400 mt-0.5">
+                            Kho còn: <span className="font-medium text-gray-600">{item.stock}</span>
+                          </p>
+                        )}
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      {/* Tăng giảm số lượng */}
+                      {/* Tăng giảm số lượng (có kiểm tra tồn kho) */}
                       <div className="flex items-center border border-gray-200 rounded">
                         <button
                           type="button"
@@ -119,10 +123,13 @@ export default function CartPage() {
                           <Minus className="w-3.5 h-3.5 text-gray-500" />
                         </button>
                         <span className="px-2.5 text-xs font-semibold">{item.qty || 1}</span>
+                        {/* Nút cộng: tự khóa nếu số lượng đã chạm giới hạn kho */}
                         <button
                           type="button"
+                          disabled={item.stock !== undefined && Number(item.qty || 1) >= Number(item.stock)}
                           onClick={() => updateQuantity(item.id, Number(item.qty || 1) + 1)}
-                          className="p-1 hover:bg-gray-100 cursor-pointer"
+                          className="p-1 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                          title={item.stock !== undefined && Number(item.qty || 1) >= Number(item.stock) ? "Đã đạt số lượng tồn kho tối đa" : "Tăng số lượng"}
                         >
                           <Plus className="w-3.5 h-3.5 text-gray-500" />
                         </button>

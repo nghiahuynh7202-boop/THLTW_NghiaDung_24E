@@ -24,6 +24,7 @@ class ProductResource extends JsonResource
             'description' => $this->description,
             'is_featured' => (int)($this->is_featured ?? 0),
             'status'      => $this->status,
+            'sold_count'  => (int) ($this->sold_count ?? 0),
             'deleted_at'  => $this->deleted_at,
             'created_at'  => $this->created_at,
 

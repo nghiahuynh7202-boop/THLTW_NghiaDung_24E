@@ -22,6 +22,7 @@ export function formatProduct(p) {
     brand: p.brand,
     is_featured: Number(p.is_featured ?? 0) === 1,
     qty: Number(p.qty ?? 0),
+    sold_count: Number(p.sold_count ?? 0),
     created_at: p.created_at,
   };
 }

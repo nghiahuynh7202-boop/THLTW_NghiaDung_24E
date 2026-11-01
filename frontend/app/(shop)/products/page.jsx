@@ -28,6 +28,10 @@ function ProductsContent() {
   const [filters, setFilters] = useState(NO_FILTER); // danh mục, thương hiệu, giá
   const [showFilter, setShowFilter] = useState(false); // ngăn lọc trên điện thoại
 
+  // --- CẤU HÌNH PHÂN TRANG (Mỗi trang hiển thị 12 sản phẩm) ---
+  const ITEMS_PER_PAGE = 12;
+  const [currentPage, setCurrentPage] = useState(1);
+
   const change = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
   const clear = () => setFilters(NO_FILTER);
 
@@ -49,31 +53,87 @@ function ProductsContent() {
   // 2. Đồng bộ từ URL: từ khóa (header tìm kiếm) và danh mục (?category=id hoặc slug)
   useEffect(() => setKeyword(qParam), [qParam]);
   useEffect(() => {
-    const found = allCategories.find((c) => String(c.id) === categoryParam || c.slug === categoryParam);
-    change({ categoryId: found ? String(found.id) : categoryParam });
+    const isSpecial = ["new", "san-pham-moi", "hot", "san-pham-hot", "ban-chay", "featured", "san-pham-noi-bat"].includes(categoryParam);
+    if (!isSpecial) {
+      const found = allCategories.find((c) => String(c.id) === categoryParam || c.slug === categoryParam);
+      change({ categoryId: found ? String(found.id) : categoryParam });
+    } else {
+      change({ categoryId: "" });
+    }
   }, [categoryParam, allCategories]);
 
   // 3. Lọc ở client: từ khóa, danh mục (gồm danh mục con), thương hiệu, khoảng giá
   const visible = useMemo(() => {
-    const picked = categories.find((c) => String(c.id) === filters.categoryId);
-    const categoryIds = (picked ? [picked, ...(picked.children || [])] : [{ id: filters.categoryId }]).map((c) => String(c.id));
+    const isNew = categoryParam === "new" || categoryParam === "san-pham-moi";
+    const isHot = categoryParam === "hot" || categoryParam === "san-pham-hot" || categoryParam === "ban-chay";
+    const isFeatured = categoryParam === "featured" || categoryParam === "san-pham-noi-bat";
+
+    const picked = !isNew && !isHot && !isFeatured ? categories.find((c) => String(c.id) === filters.categoryId) : null;
+    const categoryIds = (picked ? [picked, ...(picked.children || [])] : filters.categoryId ? [{ id: filters.categoryId }] : []).map((c) => String(c.id));
     const range = PRICE_RANGES[filters.price]; // undefined nếu chưa chọn giá
     const kw = keyword.trim().toLowerCase();
 
-    return products.filter((p) => {
+    const hasSoldProducts = products.some((p) => Number(p.sold_count || 0) > 0);
+
+    let filtered = products.filter((p) => {
       const payable = p.salePrice !== null && p.salePrice !== undefined ? p.salePrice : p.price;
-      return (
-        (p.name || "").toLowerCase().includes(kw) &&
-        (!filters.categoryId || categoryIds.includes(String(p.category_id))) &&
-        (filters.brandIds.length === 0 || filters.brandIds.includes(String(p.brand_id))) &&
-        (!range || (payable >= range.min && payable < range.max)) &&
-        (!onlySale || p.salePrice !== null)
-      );
+      const matchKeyword = (p.name || "").toLowerCase().includes(kw);
+      let matchCategory = true;
+      if (isNew) {
+        matchCategory = true;
+      } else if (isHot) {
+        // Chỉ lấy sản phẩm có lượt bán thật (> 0); nếu chưa ai mua thì hiện nổi bật thay thế
+        matchCategory = hasSoldProducts ? Number(p.sold_count || 0) > 0 : Boolean(p.is_featured);
+      } else if (isFeatured) {
+        matchCategory = p.is_featured;
+      } else {
+        matchCategory = categoryIds.length === 0 || categoryIds.includes(String(p.category_id));
+      }
+      const matchBrand = filters.brandIds.length === 0 || filters.brandIds.includes(String(p.brand_id));
+      const matchPrice = !range || (payable >= range.min && payable < range.max);
+      const matchSale = !onlySale || p.salePrice !== null;
+
+      return matchKeyword && matchCategory && matchBrand && matchPrice && matchSale;
     });
-  }, [products, categories, keyword, filters, onlySale]);
+
+    // Sắp xếp đặc biệt theo mục: Mới nhất hoặc Bán chạy nhất
+    if (isNew) {
+      filtered = [...filtered].sort((a, b) => {
+        const timeA = a.created_at ? new Date(a.created_at).getTime() : a.id;
+        const timeB = b.created_at ? new Date(b.created_at).getTime() : b.id;
+        return timeB - timeA;
+      });
+    } else if (isHot) {
+      filtered = [...filtered].sort((a, b) => Number(b.sold_count || 0) - Number(a.sold_count || 0));
+    }
+
+    return filtered;
+  }, [products, categories, keyword, filters, onlySale, categoryParam]);
+
+  // Reset về trang 1 khi người dùng đổi từ khóa tìm kiếm hoặc đổi bộ lọc
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [keyword, filters, onlySale, categoryParam]);
+
+  // Tính tổng số trang và cắt danh sách sản phẩm hiển thị theo trang
+  const totalPages = Math.ceil(visible.length / ITEMS_PER_PAGE) || 1;
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return visible.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [visible, currentPage]);
+
+  const isNewCategory = categoryParam === "new" || categoryParam === "san-pham-moi";
+  const isHotCategory = categoryParam === "hot" || categoryParam === "san-pham-hot" || categoryParam === "ban-chay";
+  const isFeaturedCategory = categoryParam === "featured" || categoryParam === "san-pham-noi-bat";
 
   const title = onlySale
     ? "Sản phẩm khuyến mãi"
+    : isNewCategory
+    ? "Sản phẩm mới"
+    : isHotCategory
+    ? "Sản phẩm Hot / Bán chạy"
+    : isFeaturedCategory
+    ? "Sản phẩm nổi bật"
     : allCategories.find((c) => String(c.id) === filters.categoryId)?.name || "Tất cả sản phẩm";
   const filterCount = (filters.categoryId ? 1 : 0) + filters.brandIds.length + (filters.price >= 0 ? 1 : 0);
 
@@ -168,7 +228,47 @@ function ProductsContent() {
                 </button>
               </div>
             ) : (
-              <ProductList products={visible} />
+              <>
+                <ProductList products={paginatedProducts} />
+
+                {/* THANH ĐIỀU HƯỚNG PHÂN TRANG (Hiển thị khi có nhiều hơn 1 trang) */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-8 pt-6 border-t border-gray-200">
+                    {/* Nút lùi trang */}
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      Trước
+                    </button>
+
+                    {/* Danh sách các số trang */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setCurrentPage(num)}
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg text-xs sm:text-sm font-semibold transition ${
+                          currentPage === num
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+
+                    {/* Nút tiến trang */}
+                    <button
+                      onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-lg border border-gray-200 bg-white text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    >
+                      Sau
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -4,8 +4,21 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import axios from "axios";
 import API_CONFIG, { BANK_CONFIG } from "@/config/api";
-import { Banknote, QrCode, CheckCircle, Loader2 } from "lucide-react";
+import { Banknote, QrCode, CheckCircle, Loader2, Tag, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { checkCoupon } from "@/services/saleServices";
+
+// Hàm xử lý link ảnh hoa tươi từ Laravel Backend
+function getImageUrl(raw) {
+  if (!raw) return "/images/hoa.jpg";
+  const str = String(raw).trim();
+  if (!str) return "/images/hoa.jpg";
+  if (str.startsWith("http://") || str.startsWith("https://") || str.startsWith("blob:") || str.startsWith("/images/")) {
+    return str;
+  }
+  const clean = str.replace(/^\/?storage\//, "").replace(/^\/+/, "");
+  return `http://127.0.0.1:8000/storage/${clean}`;
+}
 
 export default function CheckoutPage() {
   const { cartItems, clearCart } = useCart();
@@ -25,6 +38,13 @@ export default function CheckoutPage() {
   const [createdOrder, setCreatedOrder] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
 
+  // State mã khuyến mãi (lấy từ bảng productsale trong CSDL)
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponMsg, setCouponMsg] = useState({ text: "", isError: false });
+
   // Tự động điền thông tin nếu đã đăng nhập
   useEffect(() => {
     try {
@@ -41,12 +61,54 @@ export default function CheckoutPage() {
     } catch {}
   }, []);
 
-  // Tính tổng tiền
+  // Tính tổng tiền tạm tính
   const totalPrice = cartItems.reduce(
     (sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1),
     0
   );
+  // Tổng thanh toán thực tế sau khi trừ mã giảm giá
+  const finalTotal = Math.max(0, totalPrice - discountAmount);
+
   const formatMoney = (val) => Number(val || 0).toLocaleString("vi-VN") + " đ";
+
+  // Hàm kiểm tra và áp dụng mã khuyến mãi theo CSDL
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponMsg({ text: "Vui lòng nhập mã khuyến mãi!", isError: true });
+      return;
+    }
+    setCouponLoading(true);
+    setCouponMsg({ text: "", isError: false });
+    try {
+      const res = await checkCoupon(couponCode.trim(), totalPrice);
+      if (res?.valid) {
+        setAppliedCoupon(res.coupon);
+        setDiscountAmount(Number(res.discount_amount || 0));
+        setCouponMsg({ text: res.message || "Áp dụng thành công!", isError: false });
+      } else {
+        setAppliedCoupon(null);
+        setDiscountAmount(0);
+        setCouponMsg({ text: res?.message || "Mã không hợp lệ!", isError: true });
+      }
+    } catch (err) {
+      setAppliedCoupon(null);
+      setDiscountAmount(0);
+      setCouponMsg({
+        text: err.response?.data?.message || "Mã khuyến mãi không hợp lệ hoặc đã hết hạn!",
+        isError: true,
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  // Hủy áp dụng mã
+  const handleRemoveCoupon = () => {
+    setCouponCode("");
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    setCouponMsg({ text: "", isError: false });
+  };
 
   // Polling: Kiểm tra trạng thái thanh toán SePay mỗi 3 giây
   useEffect(() => {
@@ -96,6 +158,8 @@ export default function CheckoutPage() {
         address: form.address.trim(),
         note: form.note?.trim() || null,
         payment_method: paymentMethod,
+        coupon_code: appliedCoupon?.code || null,
+        discount_amount: discountAmount || 0,
         items: cartItems.map((item) => ({
           product_id: item.id,
           qty: item.qty || 1,
@@ -325,18 +389,95 @@ export default function CheckoutPage() {
           <div className="bg-white p-5 rounded-xl border border-gray-200 space-y-4 h-fit">
             <h2 className="text-sm font-bold text-gray-700 uppercase border-b pb-2">Đơn hàng của bạn</h2>
 
-            <div className="divide-y divide-gray-100 max-h-52 overflow-y-auto text-xs space-y-2">
+            {/* DANH SÁCH HOA ĐÃ CHỌN MUA (Hiển thị ảnh, tên, số lượng, giá tiền) */}
+            <div className="divide-y divide-gray-100 max-h-60 overflow-y-auto space-y-2 pr-1">
               {cartItems.map((item) => (
-                <div key={item.id} className="pt-2 flex justify-between">
-                  <span className="line-clamp-1 flex-1 pr-2">{item.name} x {item.qty || 1}</span>
-                  <span className="font-semibold text-gray-800">{formatMoney(Number(item.price || 0) * Number(item.qty || 1))}</span>
+                <div key={item.id} className="pt-2 flex items-center gap-3">
+                  <img
+                    src={getImageUrl(item.image)}
+                    alt={item.name}
+                    onError={(e) => { e.currentTarget.src = "/images/hoa.jpg"; }}
+                    className="w-12 h-12 object-cover rounded-md border border-gray-100 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-gray-800 line-clamp-1">{item.name}</p>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      {formatMoney(item.price)} x {item.qty || 1}
+                    </p>
+                  </div>
+                  <span className="font-bold text-xs text-gray-800 shrink-0">
+                    {formatMoney(Number(item.price || 0) * Number(item.qty || 1))}
+                  </span>
                 </div>
               ))}
             </div>
 
-            <div className="border-t pt-3 flex justify-between font-bold text-sm">
-              <span>Tổng thanh toán:</span>
-              <span className="text-[#B83A63] text-base font-extrabold">{formatMoney(totalPrice)}</span>
+            {/* KHUNG NHẬP MÃ KHUYẾN MÃI (Dữ liệu từ bảng productsale) */}
+            <div className="pt-2 border-t border-gray-100">
+              <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-[#B83A63]" />
+                <span>Mã khuyến mãi / Giảm giá:</span>
+              </label>
+
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-xs">
+                  <div>
+                    <span className="font-bold text-emerald-700 uppercase">{appliedCoupon.code}</span>
+                    <span className="text-emerald-600 block text-[11px] mt-0.5">
+                      Giảm {formatMoney(discountAmount)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveCoupon}
+                    className="text-xs text-red-500 hover:text-red-700 font-medium ml-2 cursor-pointer flex items-center gap-0.5"
+                  >
+                    <X className="w-3 h-3" /> Hủy mã
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="VD: GIAM10, HOA20K"
+                    className="flex-1 bg-white border border-gray-300 rounded px-3 py-1.5 text-xs text-gray-800 uppercase focus:outline-none focus:border-[#B83A63]"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleApplyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-900 text-white rounded text-xs font-semibold disabled:opacity-50 transition cursor-pointer"
+                  >
+                    {couponLoading ? "..." : "Áp dụng"}
+                  </button>
+                </div>
+              )}
+
+              {couponMsg.text && (
+                <p className={`text-[11px] mt-1.5 ${couponMsg.isError ? "text-red-500" : "text-emerald-600 font-medium"}`}>
+                  {couponMsg.text}
+                </p>
+              )}
+            </div>
+
+            {/* TỔNG THANH TOÁN */}
+            <div className="border-t pt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between text-gray-600">
+                <span>Tạm tính:</span>
+                <span className="font-semibold">{formatMoney(totalPrice)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600 font-medium">
+                  <span>Khuyến mãi ({appliedCoupon?.code}):</span>
+                  <span>-{formatMoney(discountAmount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-sm text-gray-900 pt-1.5 border-t border-gray-100">
+                <span>Tổng thanh toán:</span>
+                <span className="text-[#B83A63] text-base font-extrabold">{formatMoney(finalTotal)}</span>
+              </div>
             </div>
 
             <button

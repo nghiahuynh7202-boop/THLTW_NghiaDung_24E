@@ -13,10 +13,16 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    // Lấy danh sách sản phẩm phân trang
+    // Lấy danh sách sản phẩm phân trang (kèm tổng số lượng đã bán thực tế sold_count)
     public function index(Request $request)
     {
-        $query = Product::with(['category', 'brand', 'sales'])->latest('id');
+        $query = Product::with(['category', 'brand', 'sales'])
+            ->withSum(['orderDetails as sold_count' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->where('status', '!=', 5); // Chỉ tính đơn hợp lệ, không tính đơn đã hủy
+                });
+            }], 'qty')
+            ->latest('id');
 
         // Khách chỉ xem sản phẩm đang bật
         if (! $request->is('api/admin/*')) {
@@ -76,10 +82,15 @@ class ProductController extends Controller
             ->setStatusCode(201);
     }
 
-    // Xem chi tiết một sản phẩm theo ID hoặc Slug
+    // Xem chi tiết một sản phẩm theo ID hoặc Slug (kèm sold_count)
     public function show($id): ProductResource
     {
         $product = Product::with(['category', 'brand', 'sales'])
+            ->withSum(['orderDetails as sold_count' => function ($q) {
+                $q->whereHas('order', function ($oq) {
+                    $oq->where('status', '!=', 5);
+                });
+            }], 'qty')
             ->where('id', $id)
             ->orWhere('slug', $id)
             ->firstOrFail();

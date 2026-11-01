@@ -46,6 +46,14 @@ export function AuthProvider({ children }) {
     }
   };
 
+  // Hàm cập nhật thông tin người dùng trong state và localStorage
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    if (updatedUser) {
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+    }
+  };
+
   // Hàm đăng xuất: làm rỗng state và xóa khỏi localStorage
   const logout = () => {
     setUser(null);
@@ -56,7 +64,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

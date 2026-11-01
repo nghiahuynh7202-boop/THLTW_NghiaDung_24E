@@ -13,28 +13,18 @@ import { useToast } from "@/hooks/useToast";
 // category = slug danh mục trong database; value của tag = giá trị gửi lên API để lọc.
 const SECTIONS = [
   {
-    title: "HOA SINH NHẬT BÁN CHẠY",
+    title: "SAN PHAM HOT",
     color: "bg-[#f68b1f]",
-    link: "/category/hoa-sinh-nhat",
-    category: "hoa-sinh-nhat",
-    tags: [
-      { label: "Tặng bạn gái", value: "ban-gai" },
-      { label: "Tặng mẹ", value: "tang-me" },
-      { label: "Hoa hướng dương", value: "huong-duong" },
-      { label: "Hoa baby", value: "hoa-baby" },
-    ],
+    link: "/category/hot",
+    category: "hot",
+    tags: [],
   },
   {
     title: "SAN PHAM MOI",
     color: "bg-[#b91c1c]",
-    link: "/category/hoa-khai-truong",
-    category: "hoa-khai-truong",
-    tags: [
-      { label: "Kệ hoa 2 tầng", value: "ke-2-tang" },
-      { label: "Giỏ hoa để bàn", value: "gio-de-ban" },
-      { label: "Kệ hiện đại", value: "hien-dai" },
-      { label: "Lan hồ điệp", value: "lan-ho-diep" },
-    ],
+    link: "/category/new",
+    category: "new",
+    tags: [],
   },
   {
     title: "SAN PHAM NOI BAT",
@@ -42,29 +32,6 @@ const SECTIONS = [
     link: "/products",
     category: "san-pham-noi-bat",
     tags: [],
-  },
-  {
-    title: "LAN HỒ ĐIỆP",
-    color: "bg-[#0284c7]",
-    link: "/category/lan-ho-diep",
-    category: "lan-ho-diep",
-    tags: [
-      { label: "Chậu 1 cành", value: "1-canh" },
-      { label: "Chậu 3 cành", value: "3-canh" },
-      { label: "Chậu 5 cành", value: "5-canh" },
-      { label: "Lan hồ điệp vàng", value: "vang" },
-    ],
-  },
-  {
-    title: "HOA CHIA BUỒN",
-    color: "bg-[#475569]",
-    link: "/category/hoa-chia-buon",
-    category: "hoa-chia-buon",
-    tags: [
-      { label: "Kệ hoa trắng", value: "trang" },
-      { label: "Kệ hoa vàng", value: "vang" },
-      { label: "Vòng hoa truyền thống", value: "truyen-thong" },
-    ],
   },
 ];
 

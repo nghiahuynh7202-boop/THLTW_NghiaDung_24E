@@ -47,6 +47,7 @@ class ContactController extends Controller
         if ($request->user() && empty($data['user_id'])) {
             $data['user_id'] = $request->user()->id;
         }
+        $data['status'] = $data['status'] ?? 'chua_xem';
 
         $contact = Contact::create($data);
 

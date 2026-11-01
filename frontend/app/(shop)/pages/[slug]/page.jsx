@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Clock } from "lucide-react";
-import axiosClient from "@/lib/axiosClient";
+import { getPublicPageBySlug } from "@/services/pageServices";
 
 export default function SinglePageDetail() {
   const params = useParams();
@@ -17,10 +17,9 @@ export default function SinglePageDetail() {
   useEffect(() => {
     if (!slug) return;
 
-    axiosClient
-      .get(`/pages/${slug}`)
-      .then((res) => {
-        setPage(res?.data || res);
+    getPublicPageBySlug(slug)
+      .then((data) => {
+        setPage(data);
       })
       .catch((err) => {
         console.error("Lỗi tải trang đơn:", err);

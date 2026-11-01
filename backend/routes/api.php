@@ -24,11 +24,11 @@ use Illuminate\Support\Facades\Route;
 // =========================================================================
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::put('/profile', [AuthController::class, 'updateProfile']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'profile']);
     Route::get('/profile', [AuthController::class, 'profile']);
-    Route::put('/profile', [AuthController::class, 'updateProfile']);
     Route::put('/change-password', [AuthController::class, 'changePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
@@ -58,7 +58,7 @@ Route::get('/banners/{id}', [BannerController::class, 'show']);
 Route::get('/menus', [MenuController::class, 'index']);
 Route::get('/menus/{id}', [MenuController::class, 'show']);
 
-Route::post('/contacts', [ContactController::class, 'store']);
+Route::post('/contacts', [ContactController::class, 'store'])->middleware('throttle:10,1');
 
 Route::get('/post-topics', [PostTopicController::class, 'index']);
 Route::get('/post-topics/{id}', [PostTopicController::class, 'show']);

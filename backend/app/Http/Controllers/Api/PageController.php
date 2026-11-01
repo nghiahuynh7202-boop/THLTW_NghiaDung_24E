@@ -23,7 +23,7 @@ class PageController extends Controller
             $query->active();
         }
 
-        $perPage = (int) $request->input('per_page', 12);
+        $perPage = (int) $request->input('per_page', 50);
         $pages = $query->paginate($perPage);
 
         return PageResource::collection($pages);
