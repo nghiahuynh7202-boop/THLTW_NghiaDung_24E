@@ -85,7 +85,7 @@ export default function PostsPage() {
     current_page: 1,
     last_page: 1,
     total: 0,
-    per_page: 9,
+    per_page: 6,
   });
 
   // 1. TẢI DANH SÁCH CHỦ ĐỀ TỪ CSDL (POST_TOPICS)
@@ -110,7 +110,7 @@ export default function PostsPage() {
     try {
       const params = {
         page: currentPage,
-        per_page: 9,
+        per_page: 6,
       };
       if (keyword.trim()) params.keyword = keyword.trim();
       if (selectedTopicId !== "all") params.topic_id = selectedTopicId;
@@ -122,7 +122,7 @@ export default function PostsPage() {
           current_page: res.meta.current_page || 1,
           last_page: res.meta.last_page || 1,
           total: res.meta.total || (res.data ? res.data.length : 0),
-          per_page: res.meta.per_page || 9,
+          per_page: res.meta.per_page || 6,
         });
       }
     } catch (err) {

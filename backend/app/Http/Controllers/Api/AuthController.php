@@ -175,6 +175,41 @@ class AuthController extends Controller
         ]);
     }
 
+    // Kiểm tra tính hợp lệ của mã OTP trước khi qua bước đặt mật khẩu mới
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp'   => 'required|string',
+        ], [
+            'email.required' => 'Vui lòng cung cấp email.',
+            'email.exists'   => 'Không tìm thấy tài khoản với email này.',
+            'otp.required'   => 'Vui lòng nhập mã OTP gồm 6 chữ số.',
+        ]);
+
+        $tokenRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->where('token', trim($request->otp))
+            ->first();
+
+        if (! $tokenRecord) {
+            return response()->json([
+                'message' => 'Mã xác thực OTP không chính xác!',
+            ], 422);
+        }
+
+        if (now()->diffInMinutes($tokenRecord->created_at) > 15) {
+            return response()->json([
+                'message' => 'Mã OTP đã hết hiệu lực (quá 15 phút). Vui lòng gửi lại mã mới!',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Xác thực mã OTP thành công! Mời bạn nhập mật khẩu mới.',
+        ]);
+    }
+
     // Xác nhận mã OTP và đặt lại mật khẩu mới
     public function resetPassword(Request $request): JsonResponse
     {

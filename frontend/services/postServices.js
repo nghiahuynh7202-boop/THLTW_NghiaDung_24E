@@ -39,12 +39,12 @@ export async function getPublicPostsWithPagination(params = {}) {
       current_page: res?.current_page ?? 1,
       last_page: res?.last_page ?? 1,
       total: res?.total ?? items.length,
-      per_page: res?.per_page ?? 9,
+      per_page: res?.per_page ?? 6,
     };
     return { data: items, meta };
   } catch (error) {
     console.error("Lỗi getPublicPostsWithPagination:", error);
-    return { data: [], meta: { current_page: 1, last_page: 1, total: 0, per_page: 9 } };
+    return { data: [], meta: { current_page: 1, last_page: 1, total: 0, per_page: 6 } };
   }
 }
 
