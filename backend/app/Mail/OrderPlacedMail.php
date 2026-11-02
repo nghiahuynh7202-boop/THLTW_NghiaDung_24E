@@ -23,8 +23,12 @@ class OrderPlacedMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $subject = (int) $this->order->payment_status === 1
+            ? '🌸 Xác nhận thanh toán thành công - Đơn hàng #' . $this->order->id
+            : '🌸 Xác nhận đặt hàng thành công (COD) - Đơn hàng #' . $this->order->id;
+
         return new Envelope(
-            subject: '🌸 Xác nhận đặt hàng thành công - Đơn hàng #' . $this->order->id,
+            subject: $subject,
         );
     }
 

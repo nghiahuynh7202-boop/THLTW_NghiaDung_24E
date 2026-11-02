@@ -131,12 +131,14 @@ class OrderController extends Controller
             return $order;
         });
 
-        // 6. Tự động gửi email xác nhận đặt hàng về Gmail của khách
-        if (! empty($order->email)) {
+        // 6. Gửi email xác nhận đơn hàng về Gmail của khách:
+        // - Với COD: gửi ngay lập tức vì đơn hàng đã được chốt.
+        // - Với Chuyển khoản QR (SePay): CHƯA gửi tại đây, mà sẽ tự động gửi khi khách chuyển khoản thành công (xử lý tại SepayController).
+        if (! empty($order->email) && $order->payment_method === 'cod') {
             try {
                 Mail::to($order->email)->send(new OrderPlacedMail($order));
             } catch (\Throwable $e) {
-                Log::error('Lỗi gửi email xác nhận đơn hàng #' . $order->id . ': ' . $e->getMessage());
+                Log::error('Lỗi gửi email xác nhận đơn hàng COD #' . $order->id . ': ' . $e->getMessage());
             }
         }
 
