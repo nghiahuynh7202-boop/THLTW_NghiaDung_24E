@@ -133,7 +133,18 @@
           <div><strong>Ghi chú đơn hàng:</strong> {{ $order->note }}</div>
         @endif
         <div><strong>Phương thức thanh toán:</strong> 
-          {{ strtoupper($order->payment_method) === 'BANK_TRANSFER' ? 'Chuyển khoản ngân hàng (QR Code)' : 'Thanh toán khi nhận hàng (COD)' }}
+          {{ in_array(strtoupper($order->payment_method), ['BANK_TRANSFER', 'QR']) ? 'Chuyển khoản VietQR (Tự động SePay)' : 'Thanh toán khi nhận hàng (COD)' }}
+        </div>
+        <div><strong>Trạng thái thanh toán:</strong> 
+          @if((int)$order->payment_status === 1)
+            <span style="color: #16a34a; font-weight: bold; background: #dcfce7; padding: 2px 8px; border-radius: 4px;">
+              ✓ ĐÃ THANH TOÁN THÀNH CÔNG
+            </span>
+          @else
+            <span style="color: #d97706; font-weight: bold; background: #fef3c7; padding: 2px 8px; border-radius: 4px;">
+              Chờ thanh toán khi nhận hàng (COD)
+            </span>
+          @endif
         </div>
       </div>
 
