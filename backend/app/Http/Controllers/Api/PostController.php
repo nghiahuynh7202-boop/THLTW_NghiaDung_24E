@@ -49,7 +49,7 @@ class PostController extends Controller
             }
         }
 
-        $perPage = (int) $request->input('per_page', 9);
+        $perPage = (int) $request->input('per_page', 6);
         $posts = $query->paginate($perPage);
 
         return PostResource::collection($posts);

@@ -81,15 +81,24 @@ class OrderController extends Controller
 
             // 3. Tạo đơn hàng (nếu user_id không tồn tại trong DB thì gán null để tránh lỗi khóa ngoại)
             $userId = $validated['user_id'] ?? $request->user()?->id;
-            if ($userId && !User::where('id', $userId)->exists()) {
-                $userId = null;
+            $user = null;
+            if ($userId) {
+                $user = User::find($userId);
+                if (! $user) {
+                    $userId = null;
+                }
             }
+
+            // Tự động lấy email: ưu tiên email khách nhập trong form, nếu trống thì lấy email từ tài khoản
+            $customerEmail = ! empty($validated['email'])
+                ? trim($validated['email'])
+                : ($user?->email ?? null);
 
             $order = Order::create([
                 'user_id'         => $userId,
                 'name'            => $validated['name'],
                 'phone'           => $validated['phone'],
-                'email'           => $validated['email'] ?? null,
+                'email'           => $customerEmail,
                 'address'         => $validated['address'],
                 'note'            => $validated['note'] ?? null,
                 'payment_method'  => $validated['payment_method'] ?? 'cod',

@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     name: "",
     phone: "",
+    email: "",
     address: "",
     note: "",
   });
@@ -55,6 +56,7 @@ export default function CheckoutPage() {
           ...prev,
           name: u.name || "",
           phone: u.phone || "",
+          email: u.email || "",
           address: u.address || "",
         }));
       }
@@ -138,8 +140,8 @@ export default function CheckoutPage() {
       alert("Giỏ hàng của bạn đang trống!");
       return;
     }
-    if (!form.name || !form.phone || !form.address) {
-      alert("Vui lòng điền đầy đủ Tên, SĐT và Địa chỉ nhận hoa!");
+    if (!form.name || !form.phone || !form.address || !form.email) {
+      alert("Vui lòng điền đầy đủ Họ tên, SĐT, Email và Địa chỉ nhận hoa!");
       return;
     }
 
@@ -155,6 +157,7 @@ export default function CheckoutPage() {
         user_id: userId,
         name: form.name.trim(),
         phone: form.phone.trim(),
+        email: form.email?.trim() || null,
         address: form.address.trim(),
         note: form.note?.trim() || null,
         payment_method: paymentMethod,
@@ -326,6 +329,20 @@ export default function CheckoutPage() {
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 className="w-full bg-white border border-gray-300 rounded p-2 text-xs text-gray-800 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
                 placeholder="0901234567"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Email nhận xác nhận đơn hàng <span className="text-[#B83A63]">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                className="w-full bg-white border border-gray-300 rounded p-2 text-xs text-gray-800 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
+                placeholder="vidu@gmail.com (Hệ thống sẽ gửi hóa đơn về đây)"
               />
             </div>
 

@@ -17,7 +17,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  // Chế độ hiển thị: "login" (Đăng nhập) | "forgot" (Nhập email nhận OTP) | "reset" (Nhập OTP & MK mới)
+  // Chế độ hiển thị: "login" (Đăng nhập) | "forgot" (Nhập email) | "otp" (Nhập OTP) | "new-password" (Nhập MK mới)
   const [mode, setMode] = useState("login");
 
   // Dữ liệu đăng nhập
@@ -59,7 +59,7 @@ export default function LoginPage() {
     }
   };
 
-  // 2. XỬ LÝ GỬI MÃ OTP QUA GMAIL
+  // 2. BƯỚC 1: XỬ LÝ GỬI MÃ OTP QUA GMAIL
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError("");
@@ -77,7 +77,7 @@ export default function LoginPage() {
       });
 
       setSuccessMsg(res.data?.message || "Đã gửi mã OTP về Gmail!");
-      setMode("reset"); // Chuyển sang bước nhập OTP
+      setMode("otp"); // Chuyển sang màn hình CHỈ NHẬP OTP
     } catch (err) {
       setError(err.response?.data?.message || "Không thể gửi mã OTP. Vui lòng thử lại!");
     } finally {
@@ -85,16 +85,39 @@ export default function LoginPage() {
     }
   };
 
-  // 3. XỬ LÝ XÁC NHẬN OTP & ĐỔI MẬT KHẨU MỚI
-  const handleResetPassword = async (e) => {
+  // 3. BƯỚC 2: XỬ LÝ XÁC THỰC MÃ OTP (TRANG RIÊNG)
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
 
     if (!otp.trim()) {
-      setError("Vui lòng nhập mã OTP đã nhận qua Gmail!");
+      setError("Vui lòng nhập mã OTP 6 số đã nhận trong Gmail!");
       return;
     }
+
+    setLoading(true);
+    try {
+      const res = await axios.post(`${API_CONFIG.BASE_URL}/verify-otp`, {
+        email: forgotEmail.trim(),
+        otp: otp.trim(),
+      });
+
+      setSuccessMsg(res.data?.message || "Mã OTP chính xác! Mời bạn đặt mật khẩu mới.");
+      setMode("new-password"); // Chuyển sang trang riêng để nhập mật khẩu mới
+    } catch (err) {
+      setError(err.response?.data?.message || "Mã OTP không đúng hoặc đã hết hạn!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4. BƯỚC 3: XỬ LÝ ĐẶT LẠI MẬT KHẨU MỚI (TRANG RIÊNG)
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+
     if (newPassword.length < 6) {
       setError("Mật khẩu mới phải có ít nhất 6 ký tự!");
       return;
@@ -300,12 +323,13 @@ export default function LoginPage() {
           </>
         )}
 
-        {/* ======================= 3. BƯỚC 2: NHẬP OTP & ĐẶT MẬT KHẨU MỚI ======================= */}
-        {mode === "reset" && (
+        {/* ======================= 3. BƯỚC 2: TRANG RIÊNG CHỈ NHẬP MÃ OTP ======================= */}
+        {mode === "otp" && (
           <>
             <div className="text-center space-y-1">
-              <h1 className="text-2xl font-bold text-gray-800">
-                Đặt Lại Mật Khẩu Mới
+              <h1 className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                <KeyRound className="w-6 h-6 text-[#B83A63]" />
+                <span>Xác Thực Mã OTP</span>
               </h1>
               <p className="text-xs text-gray-500">
                 Mã OTP 6 số đã được gửi đến: <strong className="text-gray-700">{forgotEmail}</strong>
@@ -326,9 +350,9 @@ export default function LoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleResetPassword} className="space-y-3.5 text-xs">
+            <form onSubmit={handleVerifyOtp} className="space-y-4 text-xs">
               <div>
-                <label className="block font-semibold text-gray-700 mb-1">
+                <label className="block font-semibold text-gray-700 mb-1.5 text-center">
                   Mã xác thực OTP (6 số trong Gmail)
                 </label>
                 <input
@@ -336,12 +360,84 @@ export default function LoginPage() {
                   required
                   maxLength={6}
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="VD: 849201"
-                  className="w-full py-2.5 bg-pink-50/50 border border-pink-300 rounded-xl text-center text-lg font-black tracking-widest text-[#B83A63] placeholder-gray-300 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="VD: 134719"
+                  className="w-full py-3 bg-pink-50/50 border-2 border-pink-300 rounded-xl text-center text-2xl font-black tracking-widest text-[#B83A63] placeholder-gray-300 focus:outline-none focus:border-[#B83A63] focus:ring-2 focus:ring-[#B83A63]/20"
                 />
+                <p className="text-[11px] text-gray-400 text-center mt-1.5">
+                  Mã có hiệu lực trong vòng 15 phút
+                </p>
               </div>
 
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-2.5 bg-[#B83A63] hover:bg-[#9E2F54] text-white font-bold rounded-xl text-xs transition duration-150 disabled:opacity-50 cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>ĐANG XÁC THỰC MÃ...</span>
+                  </>
+                ) : (
+                  <span>Xác Nhận Mã OTP</span>
+                )}
+              </button>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loading}
+                  className="text-gray-500 hover:text-[#B83A63] underline cursor-pointer"
+                >
+                  Gửi lại mã OTP
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("forgot");
+                    setError("");
+                    setSuccessMsg("");
+                  }}
+                  className="text-gray-500 hover:text-gray-800 cursor-pointer flex items-center gap-1"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Đổi email khác</span>
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+
+        {/* ======================= 4. BƯỚC 3: TRANG RIÊNG CHỈ ĐẶT LẠI MẬT KHẨU MỚI ======================= */}
+        {mode === "new-password" && (
+          <>
+            <div className="text-center space-y-1">
+              <h1 className="text-2xl font-bold text-gray-800">
+                Đặt Lại Mật Khẩu Mới
+              </h1>
+              <p className="text-xs text-gray-500">
+                Tạo mật khẩu mới cho tài khoản: <strong className="text-gray-700">{forgotEmail}</strong>
+              </p>
+            </div>
+
+            {successMsg && (
+              <div className="p-3 bg-emerald-50 text-emerald-700 text-xs rounded-xl border border-emerald-200 flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 mt-0.5" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="p-3 bg-red-50 text-red-600 text-xs rounded-xl border border-red-200 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleResetPassword} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold text-gray-700 mb-1">
                   Mật khẩu mới
@@ -354,7 +450,7 @@ export default function LoginPage() {
                     minLength={6}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Ít nhất 6 ký tự"
+                    placeholder="Nhập ít nhất 6 ký tự"
                     className="w-full pl-9 pr-3 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:border-[#B83A63] focus:ring-1 focus:ring-[#B83A63]"
                   />
                 </div>
@@ -393,29 +489,18 @@ export default function LoginPage() {
                 )}
               </button>
 
-              <div className="flex items-center justify-between text-xs pt-1">
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={loading}
-                  className="text-gray-500 hover:text-[#B83A63] underline cursor-pointer"
-                >
-                  Gửi lại mã OTP
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("login");
-                    setError("");
-                    setSuccessMsg("");
-                  }}
-                  className="text-gray-500 hover:text-gray-800 cursor-pointer flex items-center gap-1"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Đăng nhập</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("login");
+                  setError("");
+                  setSuccessMsg("");
+                }}
+                className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Quay lại đăng nhập</span>
+              </button>
             </form>
           </>
         )}

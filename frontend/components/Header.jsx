@@ -222,74 +222,97 @@ export default function Header() {
                 {/* Tài khoản */}
                 <div className="relative" ref={accountMenuRef}>
                   {currentUser ? (
-                    <button type="button" onClick={() => setAccountMenuOpen(!accountMenuOpen)} className="flex flex-col items-center justify-center text-gray-800 hover:text-[#f68b1f] transition-colors group cursor-pointer focus:outline-none">
-                      <div className="w-7 h-7 rounded-full bg-orange-100 text-[#f68b1f] border border-orange-300 group-hover:border-[#f68b1f] flex items-center justify-center font-bold text-xs transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                      className="flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-full bg-gradient-to-r from-orange-50/90 via-amber-50/50 to-white hover:from-orange-100 hover:to-orange-50 border border-orange-200/90 hover:border-[#f68b1f] shadow-2xs hover:shadow-xs transition-all duration-200 group cursor-pointer focus:outline-none"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-[#f68b1f] to-amber-500 text-white flex items-center justify-center font-black text-xs shadow-xs ring-2 ring-white">
                         {currentUser.name ? currentUser.name.trim().charAt(0).toUpperCase() : "U"}
                       </div>
-                      <span className="text-[11px] text-gray-700 group-hover:text-[#f68b1f] font-medium mt-0.5 max-w-[80px] truncate">
-                        {currentUser.name.split(" ").slice(-1)[0] || "Tài khoản"}
-                      </span>
+                      <div className="flex flex-col text-left">
+                        <span className="text-[10px] text-gray-400 font-medium leading-none">Xin chào</span>
+                        <span className="text-xs text-gray-800 group-hover:text-[#f68b1f] font-bold leading-tight max-w-[85px] truncate">
+                          {currentUser.name.split(" ").slice(-1)[0] || "Tài khoản"}
+                        </span>
+                      </div>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-gray-400 group-hover:text-[#f68b1f] transition-transform duration-200 ${
+                          accountMenuOpen ? "rotate-180 text-[#f68b1f]" : ""
+                        }`}
+                      />
                     </button>
                   ) : (
-                    <button type="button" onClick={() => setAccountMenuOpen(!accountMenuOpen)} className="flex flex-col items-center justify-center text-gray-800 hover:text-[#f68b1f] transition-colors group cursor-pointer focus:outline-none">
-                      <div className="w-7 h-7 rounded-full border border-gray-800 group-hover:border-[#f68b1f] flex items-center justify-center transition-colors">
-                        <User className="w-4 h-4 stroke-[1.5] text-gray-800 group-hover:text-[#f68b1f] transition-colors"/>
+                    <button
+                      type="button"
+                      onClick={() => setAccountMenuOpen(!accountMenuOpen)}
+                      className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full hover:bg-orange-50/70 border border-transparent hover:border-orange-200 text-gray-700 hover:text-[#f68b1f] transition-all duration-200 group cursor-pointer focus:outline-none"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gray-100 group-hover:bg-orange-100 flex items-center justify-center text-gray-600 group-hover:text-[#f68b1f] transition-colors">
+                        <User className="w-4 h-4 stroke-[1.5]"/>
                       </div>
-                      <span className="text-[11px] text-gray-700 group-hover:text-[#f68b1f] font-normal mt-0.5">
-                        Tài khoản
-                      </span>
+                      <span className="text-xs font-semibold">Tài khoản</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 text-gray-400 group-hover:text-[#f68b1f] transition-transform duration-200 ${
+                          accountMenuOpen ? "rotate-180" : ""
+                        }`}
+                      />
                     </button>
                   )}
 
                   {/* Dropdown Menu */}
                   {accountMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 text-xs">
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-1.5 z-50 animate-in fade-in slide-in-from-top-1 text-xs overflow-hidden">
                       {currentUser ? (
                         <>
-                          <div className="px-3.5 py-2.5 border-b border-gray-100 bg-orange-50/40">
-                            <p className="font-bold text-gray-800 truncate">{currentUser.name}</p>
-                            <p className="text-[11px] text-gray-500 truncate">{currentUser.email}</p>
-                            <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-semibold bg-orange-100 text-[#f68b1f] rounded">
-                              {currentUser.role === "admin" ? "Quản trị viên" : "Khách hàng"}
-                            </span>
+                          <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-orange-50/70 to-amber-50/40 flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#f68b1f] to-amber-500 text-white font-extrabold text-sm flex items-center justify-center shadow-xs ring-2 ring-white flex-shrink-0">
+                              {currentUser.name ? currentUser.name.trim().charAt(0).toUpperCase() : "U"}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-gray-900 truncate text-xs">{currentUser.name}</p>
+                              <p className="text-[10px] text-gray-500 truncate">{currentUser.email}</p>
+                              <span className="inline-block mt-1 px-2 py-0.5 text-[9px] font-bold bg-orange-100 text-[#f68b1f] rounded-full">
+                                {currentUser.role === "admin" ? "Quản trị viên" : "Khách hàng"}
+                              </span>
+                            </div>
                           </div>
 
-                          <div className="py-1 border-b border-gray-100">
-                            <Link href="/profile" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-2 px-3.5 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] transition-colors font-medium">
-                              <User className="w-3.5 h-3.5 text-gray-500"/>
+                          <div className="p-1.5 space-y-0.5">
+                            <Link href="/profile" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] rounded-xl transition-colors font-medium">
+                              <User className="w-4 h-4 text-gray-500"/>
                               <span>Thông tin cá nhân</span>
                             </Link>
-                          </div>
 
-                          {currentUser.role === "admin" && (
-                            <div className="py-1 border-b border-gray-100">
-                              <Link href="/admin/products" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-2 px-3.5 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] transition-colors font-medium">
+                            {currentUser.role === "admin" && (
+                              <Link href="/admin/products" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-gray-700 hover:bg-orange-50 hover:text-[#f68b1f] rounded-xl transition-colors font-medium">
+                                <span className="w-4 h-4 flex items-center justify-center text-xs">⚙️</span>
                                 <span>Trang quản trị Admin</span>
                               </Link>
-                            </div>
-                          )}
+                            )}
 
-                          <div className="pt-1">
-                            <button type="button" onClick={handleLogout} className="w-full flex items-center gap-2 px-3.5 py-2 text-red-600 hover:bg-red-50 transition-colors text-left font-medium">
-                              <LogOut className="w-3.5 h-3.5"/>
-                              <span>Đăng xuất</span>
-                            </button>
+                            <div className="pt-1 border-t border-gray-100 mt-1">
+                              <button type="button" onClick={handleLogout} className="w-full flex items-center gap-2.5 px-3 py-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors text-left font-medium cursor-pointer">
+                                <LogOut className="w-4 h-4"/>
+                                <span>Đăng xuất</span>
+                              </button>
+                            </div>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div className="px-3.5 py-2 border-b border-gray-100">
-                            <p className="font-semibold text-gray-800">Chào mừng bạn</p>
+                          <div className="px-4 py-3 border-b border-gray-100 bg-orange-50/40">
+                            <p className="font-bold text-gray-800 text-xs">Chào mừng bạn</p>
                             <p className="text-[10px] text-gray-500">Đăng nhập để nhận ưu đãi</p>
                           </div>
 
-                          <div className="p-2 space-y-1">
-                            <Link href="/login" onClick={() => setAccountMenuOpen(false)} className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-semibold text-white bg-[#f68b1f] hover:bg-[#e67300] rounded-lg transition-colors shadow-2xs">
+                          <div className="p-2 space-y-1.5">
+                            <Link href="/login" onClick={() => setAccountMenuOpen(false)} className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-semibold text-white bg-[#f68b1f] hover:bg-[#e67300] rounded-xl transition-colors shadow-2xs">
                               <LogIn className="w-3.5 h-3.5"/>
                               <span>Đăng nhập</span>
                             </Link>
 
-                            <Link href="/register" onClick={() => setAccountMenuOpen(false)} className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200">
+                            <Link href="/register" onClick={() => setAccountMenuOpen(false)} className="flex items-center justify-center gap-1.5 w-full py-2 px-3 text-xs font-medium text-gray-700 hover:bg-gray-100 rounded-xl transition-colors border border-gray-200">
                               <UserPlus className="w-3.5 h-3.5"/>
                               <span>Đăng ký tài khoản</span>
                             </Link>
@@ -335,7 +358,7 @@ export default function Header() {
                     {currentUser ? (
                       <div className="space-y-2">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-orange-100 text-[#f68b1f] border border-orange-300 flex items-center justify-center font-bold text-xs">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#f68b1f] to-amber-500 text-white ring-2 ring-white shadow-xs flex items-center justify-center font-bold text-xs flex-shrink-0">
                             {currentUser.name ? currentUser.name.trim().charAt(0).toUpperCase() : "U"}
                           </div>
                           <div className="flex-1 truncate">
